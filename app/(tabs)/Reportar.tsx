@@ -1,10 +1,10 @@
-import { FontAwesome } from '@expo/vector-icons';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { Picker } from '@react-native-picker/picker';
-import * as ImagePicker from 'expo-image-picker';
-import { Stack, useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { ActivityIndicator, Alert, Image, Modal, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { View, TextInput, StyleSheet, Text, TouchableOpacity, ScrollView, Alert, Image,SafeAreaView,Platform,ActivityIndicator,Modal} from 'react-native';
+import { useRouter, Stack } from 'expo-router';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import * as ImagePicker from 'expo-image-picker';
+import { Picker } from '@react-native-picker/picker';
+import { FontAwesome } from '@expo/vector-icons';
 
 const DenunciaScreen = () => {
   const [descripcion, setDescripcion] = useState('');
