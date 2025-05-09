@@ -1,18 +1,18 @@
+import { FontAwesome } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { 
-  View, 
-  TextInput, 
-  StyleSheet, 
-  Text, 
-  TouchableOpacity, 
+import {
+  ActivityIndicator,
   Image,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import { FontAwesome } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LoginScreen = () => {
   const [correo, setCorreo] = useState('');
@@ -22,7 +22,7 @@ const LoginScreen = () => {
   const router = useRouter();
 
   // Configuración del servidor
-  const SERVER_IP = '192.168.1.73'; // Cambia por tu IP
+  const SERVER_IP = '192.168.26.3'; // Cambia por tu IP
   const API_URL = `http://${SERVER_IP}:3000/login`;
 
   const handleLogin = async () => {
