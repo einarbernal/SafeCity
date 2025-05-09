@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#1D5C1D',
     padding: 20,
   },
   logo: {
@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#2e5929',
+    color: 'white',
     marginBottom: 30,
   },
   errorText: {
@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
   loginButton: {
     width: '100%',
     height: 50,
-    backgroundColor: '#2e5929',
+    backgroundColor: '#FFD700',
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 8,
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   linkText: {
-    color: '#2e5929',
+    color: '#fff',
     fontSize: 16,
     textDecorationLine: 'underline',
   },
