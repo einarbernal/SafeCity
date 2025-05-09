@@ -73,6 +73,53 @@ app.post('/denuncias', async (req, res) => {
     }
   });
 
+// Ruta para login con la tabla ciudadano
+app.post('/login', async (req, res) => {
+  const { correo, contraseña } = req.body;
+
+  // Validaciones básicas
+  if (!correo || !contraseña) {
+    return res.status(400).json({ 
+      success: false,
+      message: 'Correo y contraseña son requeridos' 
+    });
+  }
+
+  try {
+    // Consulta a la tabla ciudadano para verificar credenciales
+    const [ciudadanos] = await pool.query(
+      'SELECT id_ciudadano, nombres, apellido_paterno, apellido_materno, correo FROM ciudadano WHERE correo = ? AND contraseña = ?',
+      [correo, contraseña]
+    );
+
+    if (ciudadanos.length === 0) {
+      return res.status(401).json({
+        success: false,
+        message: 'Credenciales incorrectas'
+      });
+    }
+
+    const ciudadano = ciudadanos[0];
+    
+    res.json({
+      success: true,
+      message: 'Login exitoso',
+      ciudadano: {
+        id_ciudadano: ciudadano.id_ciudadano,
+        nombres: ciudadano.nombres,
+        apellido_paterno: ciudadano.apellido_paterno,
+        apellido_materno: ciudadano.apellido_materno
+      }
+    });
+  } catch (error) {
+    console.error('Error en login:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error en el servidor'
+    });
+  }
+});
+
   
 // Iniciar servidor
 app.listen(PORT, () => {
