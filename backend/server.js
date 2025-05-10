@@ -120,6 +120,55 @@ app.post('/login', async (req, res) => {
   }
 });
 
+
+// Ruta para registro de ciudadanos
+app.post('/registro', async (req, res) => {
+  const { nombres, apellido_paterno, apellido_materno, correo, contraseña } = req.body;
+
+  // Validaciones básicas
+  if (!nombres || !apellido_paterno || !apellido_materno || !correo || !contraseña) {
+    return res.status(400).json({ 
+      success: false,
+      message: 'Todos los campos son requeridos' 
+    });
+  }
+
+  try {
+    // Verificar si el correo ya existe
+    const [existingUsers] = await pool.query(
+      'SELECT id_ciudadano FROM ciudadano WHERE correo = ?',
+      [correo]
+    );
+
+    if (existingUsers.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'El correo electrónico ya está registrado'
+      });
+    }
+
+    // Insertar nuevo ciudadano
+    const [result] = await pool.query(
+      `INSERT INTO ciudadano 
+      (nombres, apellido_paterno, apellido_materno, correo, contraseña) 
+      VALUES (?, ?, ?, ?, ?)`,
+      [nombres, apellido_paterno, apellido_materno, correo, contraseña]
+    );
+
+    res.json({ 
+      success: true,
+      message: 'Usuario registrado exitosamente',
+      ciudadanoId: result.insertId
+    });
+  } catch (error) {
+    console.error('Error al registrar usuario:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Error al registrar el usuario en la base de datos' 
+    });
+  }
+});
+
   
 // Iniciar servidor
 app.listen(PORT, () => {

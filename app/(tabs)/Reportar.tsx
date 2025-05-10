@@ -28,7 +28,7 @@ const showErrorModal = (message: string) => {
 };
 
 
-  const SERVER_IP = '192.168.31.104';
+  const SERVER_IP = '192.168.1.73';
   const API_URL = `http://${SERVER_IP}:3000/denuncias`;
 
   // Datos para los ComboBox

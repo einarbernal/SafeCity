@@ -22,7 +22,7 @@ const LoginScreen = () => {
   const router = useRouter();
 
   // Configuración del servidor
-  const SERVER_IP = '192.168.26.3'; // Cambia por tu IP
+  const SERVER_IP = '192.168.1.73'; // Cambia por tu IP
   const API_URL = `http://${SERVER_IP}:3000/login`;
 
   const handleLogin = async () => {
@@ -116,7 +116,7 @@ const LoginScreen = () => {
 
       <TouchableOpacity 
         style={styles.linkButton}
-        onPress={() => alert("En desarrollo")}
+        onPress={() => router.push("/auth/R")}
       >
         <Text style={styles.linkText}>¿No tienes cuenta? Regístrate</Text>
       </TouchableOpacity>
