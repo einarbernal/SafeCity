@@ -21,8 +21,7 @@ const LoginScreen = () => {
   const [error, setError] = useState('');
   const router = useRouter();
 
-  // Configuración del servidor
-  const SERVER_IP = '192.168.1.73'; // Cambia por tu IP
+  const SERVER_IP = '192.168.1.73';
   const API_URL = `http://${SERVER_IP}:3000/login`;
 
   const handleLogin = async () => {
@@ -46,10 +45,18 @@ const LoginScreen = () => {
       const data = await response.json();
 
       if (data.success) {
-        // Guardar solo los datos necesarios
+        // Guardar datos del usuario
         await AsyncStorage.setItem('userData', JSON.stringify(data.ciudadano));
-        // Redirige al área principal
-        router.replace('/(tabs)');
+        
+        // Redirigir al área principal
+        router.replace({
+          pathname: '/(tabs)',
+          params: {
+            idCiudadano: data.ciudadano.id_ciudadano,
+            nombres: data.ciudadano.nombres,
+            apellidos: `${data.ciudadano.apellido_paterno} ${data.ciudadano.apellido_materno}`
+          }
+        });
       } else {
         setError(data.message || 'Credenciales incorrectas');
       }
@@ -66,7 +73,6 @@ const LoginScreen = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      {/* Logo de la app */}
       <Image 
         source={require('@/assets/images/logo.png')} 
         style={styles.logo}

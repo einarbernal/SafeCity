@@ -2,9 +2,10 @@ import { FontAwesome } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
 import * as ImagePicker from 'expo-image-picker';
-import { Stack, useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
+import React, { useState, useEffect } from 'react';
 import { ActivityIndicator, Alert, Image, Modal, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const DenunciaScreen = () => {
   const [descripcion, setDescripcion] = useState('');
@@ -15,6 +16,7 @@ const DenunciaScreen = () => {
   const [calleAvenida, setCalleAvenida] = useState('');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [idCiudadano, setIdCiudadano] = useState<number | null>(null);
   const router = useRouter();
 
 
@@ -30,6 +32,23 @@ const showErrorModal = (message: string) => {
 
   const SERVER_IP = '192.168.1.73';
   const API_URL = `http://${SERVER_IP}:3000/denuncias`;
+
+  // Obtener ID del ciudadano al cargar el componente
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const userDataString = await AsyncStorage.getItem('userData');
+        if (userDataString) {
+          const userData = JSON.parse(userDataString);
+          setIdCiudadano(userData.id_ciudadano);
+        }
+      } catch (error) {
+        console.error('Error al cargar datos del usuario:', error);
+      }
+    };
+
+    loadUserData();
+  }, []);
 
   // Datos para los ComboBox
   const modulosPoliciales = [
@@ -101,6 +120,10 @@ const showErrorModal = (message: string) => {
       showErrorModal('Debe ingresar la calle o avenida');
       return;
     }
+    if (!idCiudadano) {
+      showErrorModal('No se pudo identificar al usuario. Por favor, inicie sesión nuevamente.');
+      return;
+    }
   
     setLoading(true);
 
@@ -112,7 +135,8 @@ const showErrorModal = (message: string) => {
       tipo: tipoIncidente,
       calle_avenida: calleAvenida,
       evidencia: selectedImage || '',
-      estado: 'PENDIENTE'
+      estado: 'PENDIENTE',
+      id_ciudadano: idCiudadano
     };
 
     try {
