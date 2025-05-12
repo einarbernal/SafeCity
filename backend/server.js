@@ -38,46 +38,10 @@ pool.getConnection()
 
 
 
-// Ruta para crear denuncias
-app.post('/denuncias', async (req, res) => {
-    const { descripcion, modulo_epi, hora, fecha, tipo, calle_avenida, evidencia } = req.body;
-  
-    // Validaciones básicas
-    if (!descripcion || !modulo_epi || !hora || !fecha || !tipo || !calle_avenida) {
-      return res.status(400).json({ 
-        success: false,
-        message: 'Todos los campos obligatorios son requeridos' 
-      });
-    }
-  
-    try {
-      // Insertar denuncia en la base de datos
-      const [result] = await pool.query(
-        `INSERT INTO denuncia 
-        (descripcion, modulo_epi, hora, fecha, tipo, calle_avenida, evidencia, estado) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDIENTE')`,
-        [descripcion, modulo_epi, hora, fecha, tipo, calle_avenida, evidencia || null]
-      );
-  
-      res.json({ 
-        success: true,
-        message: 'Denuncia registrada exitosamente',
-        denunciaId: result.insertId
-      });
-    } catch (error) {
-      console.error('Error al registrar denuncia:', error);
-      res.status(500).json({ 
-        success: false,
-        message: 'Error al registrar la denuncia en la base de datos' 
-      });
-    }
-  });
-
-// Ruta para login con la tabla ciudadano
+// Ruta para login
 app.post('/login', async (req, res) => {
   const { correo, contraseña } = req.body;
 
-  // Validaciones básicas
   if (!correo || !contraseña) {
     return res.status(400).json({ 
       success: false,
@@ -86,7 +50,6 @@ app.post('/login', async (req, res) => {
   }
 
   try {
-    // Consulta a la tabla ciudadano para verificar credenciales
     const [ciudadanos] = await pool.query(
       'SELECT id_ciudadano, nombres, apellido_paterno, apellido_materno, correo FROM ciudadano WHERE correo = ? AND contraseña = ?',
       [correo, contraseña]
@@ -108,7 +71,9 @@ app.post('/login', async (req, res) => {
         id_ciudadano: ciudadano.id_ciudadano,
         nombres: ciudadano.nombres,
         apellido_paterno: ciudadano.apellido_paterno,
-        apellido_materno: ciudadano.apellido_materno
+        apellido_materno: ciudadano.apellido_materno,
+        correo: ciudadano.correo,
+        nombreCompleto: `${ciudadano.nombres} ${ciudadano.apellido_paterno} ${ciudadano.apellido_materno}`
       }
     });
   } catch (error) {
@@ -116,6 +81,103 @@ app.post('/login', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error en el servidor'
+    });
+  }
+});
+
+// Ruta para crear denuncias
+app.post('/denuncias', async (req, res) => {
+  const { descripcion, modulo_epi, hora, fecha, tipo, calle_avenida, evidencia, id_ciudadano } = req.body;
+
+  // Validaciones básicas
+  if (!descripcion || !modulo_epi || !hora || !fecha || !tipo || !calle_avenida || !id_ciudadano) {
+    return res.status(400).json({ 
+      success: false,
+      message: 'Todos los campos obligatorios son requeridos' 
+    });
+  }
+
+  try {
+    // Verificar que el ciudadano existe
+    const [ciudadano] = await pool.query(
+      'SELECT id_ciudadano FROM ciudadano WHERE id_ciudadano = ?',
+      [id_ciudadano]
+    );
+
+    if (ciudadano.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Usuario no válido'
+      });
+    }
+
+    // Insertar denuncia en la base de datos
+    const [result] = await pool.query(
+      `INSERT INTO denuncia 
+      (descripcion, modulo_epi, hora, fecha, tipo, calle_avenida, evidencia, estado, id_ciudadano) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDIENTE', ?)`,
+      [descripcion, modulo_epi, hora, fecha, tipo, calle_avenida, evidencia || null, id_ciudadano]
+    );
+
+    res.json({ 
+      success: true,
+      message: 'Denuncia registrada exitosamente',
+      denunciaId: result.insertId
+    });
+  } catch (error) {
+    console.error('Error al registrar denuncia:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Error al registrar la denuncia en la base de datos' 
+    });
+  }
+});
+
+
+// Ruta para registro de ciudadanos
+app.post('/registro', async (req, res) => {
+  const { nombres, apellido_paterno, apellido_materno, correo, contraseña } = req.body;
+
+  // Validaciones básicas
+  if (!nombres || !apellido_paterno || !apellido_materno || !correo || !contraseña) {
+    return res.status(400).json({ 
+      success: false,
+      message: 'Todos los campos son requeridos' 
+    });
+  }
+
+  try {
+    // Verificar si el correo ya existe
+    const [existingUsers] = await pool.query(
+      'SELECT id_ciudadano FROM ciudadano WHERE correo = ?',
+      [correo]
+    );
+
+    if (existingUsers.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'El correo electrónico ya está registrado'
+      });
+    }
+
+    // Insertar nuevo ciudadano
+    const [result] = await pool.query(
+      `INSERT INTO ciudadano 
+      (nombres, apellido_paterno, apellido_materno, correo, contraseña) 
+      VALUES (?, ?, ?, ?, ?)`,
+      [nombres, apellido_paterno, apellido_materno, correo, contraseña]
+    );
+
+    res.json({ 
+      success: true,
+      message: 'Usuario registrado exitosamente',
+      ciudadanoId: result.insertId
+    });
+  } catch (error) {
+    console.error('Error al registrar usuario:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Error al registrar el usuario en la base de datos' 
     });
   }
 });

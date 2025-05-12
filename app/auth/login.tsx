@@ -21,8 +21,12 @@ const LoginScreen = () => {
   const [error, setError] = useState('');
   const router = useRouter();
 
+<<<<<<< HEAD
   // Configuración del servidor
-  const SERVER_IP = '192.168.68.108'; // Cambia por tu IP
+  const SERVER_IP = '192.168.26.7'; // Cambia por tu IP
+=======
+  const SERVER_IP = '192.168.26.7';
+>>>>>>> beaa4286fbf1a17b54b1bee82d4e359284d71655
   const API_URL = `http://${SERVER_IP}:3000/login`;
 
   const handleLogin = async () => {
@@ -46,10 +50,18 @@ const LoginScreen = () => {
       const data = await response.json();
 
       if (data.success) {
-        // Guardar solo los datos necesarios
+        // Guardar datos del usuario
         await AsyncStorage.setItem('userData', JSON.stringify(data.ciudadano));
-        // Redirige al área principal
-        router.replace('/(tabs)');
+        
+        // Redirigir al área principal
+        router.replace({
+          pathname: '/(tabs)',
+          params: {
+            idCiudadano: data.ciudadano.id_ciudadano,
+            nombres: data.ciudadano.nombres,
+            apellidos: `${data.ciudadano.apellido_paterno} ${data.ciudadano.apellido_materno}`
+          }
+        });
       } else {
         setError(data.message || 'Credenciales incorrectas');
       }
@@ -66,7 +78,6 @@ const LoginScreen = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      {/* Logo de la app */}
       <Image 
         source={require('@/assets/images/logo.png')} 
         style={styles.logo}
@@ -116,8 +127,12 @@ const LoginScreen = () => {
 
       <TouchableOpacity 
         style={styles.linkButton}
+<<<<<<< HEAD
         onPress={() => router.push('/auth/RegistroUsuario')}
 
+=======
+        onPress={() => router.push("/auth/R")}
+>>>>>>> beaa4286fbf1a17b54b1bee82d4e359284d71655
       >
         <Text style={styles.linkText}>¿No tienes cuenta? Regístrate</Text>
       </TouchableOpacity>
