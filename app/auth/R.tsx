@@ -1,7 +1,7 @@
 import { FontAwesome } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { ActivityIndicator, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Modal } from 'react-native';
+import { ActivityIndicator, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 const RegistroCiudadano = () => {
   const [nombres, setNombres] = useState('');
@@ -29,7 +29,7 @@ const RegistroCiudadano = () => {
     setModalSuccessVisible(true);
   };
 
-  const SERVER_IP = '192.168.1.73';
+  const SERVER_IP = '192.168.26.7';
   const API_URL = `http://${SERVER_IP}:3000/registro`;
 
   const handleSubmit = async () => {

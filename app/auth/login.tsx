@@ -21,12 +21,10 @@ const LoginScreen = () => {
   const [error, setError] = useState('');
   const router = useRouter();
 
-<<<<<<< HEAD
+
   // Configuración del servidor
   const SERVER_IP = '192.168.26.7'; // Cambia por tu IP
-=======
-  const SERVER_IP = '192.168.26.7';
->>>>>>> beaa4286fbf1a17b54b1bee82d4e359284d71655
+
   const API_URL = `http://${SERVER_IP}:3000/login`;
 
   const handleLogin = async () => {
@@ -127,12 +125,8 @@ const LoginScreen = () => {
 
       <TouchableOpacity 
         style={styles.linkButton}
-<<<<<<< HEAD
-        onPress={() => router.push('/auth/RegistroUsuario')}
+        onPress={() => router.push('/auth/R')}
 
-=======
-        onPress={() => router.push("/auth/R")}
->>>>>>> beaa4286fbf1a17b54b1bee82d4e359284d71655
       >
         <Text style={styles.linkText}>¿No tienes cuenta? Regístrate</Text>
       </TouchableOpacity>

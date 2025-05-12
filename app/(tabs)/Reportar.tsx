@@ -1,11 +1,11 @@
 import { FontAwesome } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
 import * as ImagePicker from 'expo-image-picker';
-import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
-import React, { useState, useEffect } from 'react';
+import { Stack, useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Modal, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const DenunciaScreen = () => {
   const [descripcion, setDescripcion] = useState('');
@@ -30,7 +30,7 @@ const showErrorModal = (message: string) => {
 };
 
 
-  const SERVER_IP = '192.168.1.73';
+  const SERVER_IP = '192.168.26.7';
   const API_URL = `http://${SERVER_IP}:3000/denuncias`;
 
   // Obtener ID del ciudadano al cargar el componente
