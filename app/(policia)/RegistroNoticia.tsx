@@ -1,72 +1,63 @@
 import { FontAwesome } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Picker } from '@react-native-picker/picker';
 import * as ImagePicker from 'expo-image-picker';
 import { Stack, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Image, Modal, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  Modal,
+  Platform,
+  SafeAreaView, ScrollView,
+  StyleSheet,
+  Text, TextInput, TouchableOpacity,
+  View
+} from 'react-native';
 
-const DenunciaScreen = () => {
+const NoticiaScreen = () => {
+  const [titulo, setTitulo] = useState('');  
   const [descripcion, setDescripcion] = useState('');
-  const [moduloPolicial, setModuloPolicial] = useState('');
-  const [horaIncidente, setHoraIncidente] = useState(new Date());
+  const [fechaPublicacion, setFechaPublicacion] = useState(new Date());
+  const [horaPublicacion, setHoraPublicacion] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
-  const [tipoIncidente, setTipoIncidente] = useState('');
-  const [calleAvenida, setCalleAvenida] = useState('');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [idCiudadano, setIdCiudadano] = useState<number | null>(null);
+  const [idUsuario, setIdUsuario] = useState<number | null>(null);
   const router = useRouter();
 
+  const [modalErrorVisible, setModalErrorVisible] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
-const [modalErrorVisible, setModalErrorVisible] = useState(false);
-const [errorMessage, setErrorMessage] = useState('');
-  
-
-const showErrorModal = (message: string) => {
+  const showErrorModal = (message: string) => {
     setErrorMessage(message);
     setModalErrorVisible(true);
-};
-
+  };
 
   const SERVER_IP = '192.168.31.104';
-  const API_URL = `http://${SERVER_IP}:3000/denuncias`;
+  const API_URL = `http://${SERVER_IP}:3000/noticias`;
 
-  // Obtener ID del ciudadano al cargar el componente
+  // Obtener ID del usuario al cargar el componente
   useEffect(() => {
-    const loadUserData = async () => {
-      try {
-        const userDataString = await AsyncStorage.getItem('userData');
-        if (userDataString) {
-          const userData = JSON.parse(userDataString);
-          setIdCiudadano(userData.id_ciudadano);
-        }
-      } catch (error) {
-        console.error('Error al cargar datos del usuario:', error);
+  const loadUserData = async () => {
+    try {
+      const userDataString = await AsyncStorage.getItem('userData');
+      if (userDataString) {
+        const userData = JSON.parse(userDataString);
+        // Cambié aquí para buscar id_policia
+        const id = userData.id_policia || null;
+        if (id) setIdUsuario(id);
       }
-    };
+    } catch (error) {
+      console.error('Error al cargar datos del usuario:', error);
+    }
+  };
 
-    loadUserData();
-  }, []);
+  loadUserData();
+}, []);
 
-  // Datos para los ComboBox
-  const modulosPoliciales = [
-    { label: 'EPI Nº 5 ALALAY', value: 'EPI_N5_Alalay' },
-    { label: 'EPI Nº 1 COÑA COÑA', value: 'EPI_N1_Coña Coña' },
-    { label: 'EPI Nº 3 JAIHUAYCO', value: 'EPI_N3_Jaihuayco' },
-    { label: 'EPI Nº 7 SUR', value: 'EPI_N7_Sur' },
-    { label: 'EPI Nº 6 CENTRAL', value: 'EPI_N6_Central' },
-  ];
-
-  const tiposIncidente = [
-    { label: 'Asesinato', value: 'ASESINATO' },
-    { label: 'Asalto', value: 'ASALTO' },
-    { label: 'Accidente de tránsito', value: 'ACCIDENTE_TRANSITO' },
-    { label: 'Violencia doméstica', value: 'VIOLENCIA_DOMESTICA' },
-    { label: 'Disturbio publico', value: 'DISTURBIO_PUBLICO' },
-    { label: 'Otro', value: 'OTRO' },
-  ];
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -87,10 +78,17 @@ const showErrorModal = (message: string) => {
     }
   };
 
+  const handleDateChange = (event: any, selectedDate?: Date) => {
+    setShowDatePicker(Platform.OS === 'ios');
+    if (selectedDate) {
+      setFechaPublicacion(selectedDate);
+    }
+  };
+
   const handleTimeChange = (event: any, selectedTime?: Date) => {
     setShowTimePicker(Platform.OS === 'ios');
     if (selectedTime) {
-      setHoraIncidente(selectedTime);
+      setHoraPublicacion(selectedTime);
     }
   };
 
@@ -102,107 +100,62 @@ const showErrorModal = (message: string) => {
     return date.toISOString().split('T')[0]; // Formato YYYY-MM-DD
   };
 
-
   const handleSubmit = async () => {
-    if (!descripcion) {
-      showErrorModal('La descripción del incidente es obligatoria');
-      return;
-    }
-    if (!moduloPolicial) {
-      showErrorModal('Debe seleccionar un módulo policial');
-      return;
-    }
-    if (!tipoIncidente) {
-      showErrorModal('Debe seleccionar un tipo de incidente');
-      return;
-    }
-    if (!calleAvenida) {
-      showErrorModal('Debe ingresar la calle o avenida');
-      return;
-    }
-    if (!idCiudadano) {
-      showErrorModal('No se pudo identificar al usuario. Por favor, inicie sesión nuevamente.');
-      return;
-    }
+  if (!idUsuario) {
+    showErrorModal('No se encontró el usuario policía. Por favor inicia sesión de nuevo.');
+    return;
+  }
+  if (!titulo) {
+    showErrorModal('El título de la noticia es obligatorio');
+    return;
+  }
+  if (!descripcion) {
+    showErrorModal('La descripción de la noticia es obligatoria');
+    return;
+  }
   
+  
+    
     setLoading(true);
 
-    const denunciaData = {
+    const noticiaData = {
+      titulo,
       descripcion,
-      modulo_epi: moduloPolicial,
-      hora: formatTime(horaIncidente),
-      fecha: formatDate(new Date()),
-      tipo: tipoIncidente,
-      calle_avenida: calleAvenida,
-      evidencia: selectedImage || '',
-      estado: 'PENDIENTE',
-      id_ciudadano: idCiudadano
+      fecha: formatDate(fechaPublicacion),
+      hora: formatTime(horaPublicacion),
+      imagen: selectedImage || '',
+      idPolicia: idUsuario, // Aquí agregamos el id del usuario (policía)
     };
 
     try {
-        const response = await fetch(API_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(denunciaData),
-        });
-    
-        const data = await response.json();
-    
-        if (data.success) {
-          router.push('/auth/DenunciaExito');
-        } else {
-          showErrorModal(data.message || 'Error al registrar denuncia');
-        }
-      } catch (error) {
-        console.error('Error al enviar denuncia:', error);
-        showErrorModal('No se pudo conectar al servidor');
-      } finally {
-        setLoading(false);
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(noticiaData),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        router.push('/(policia)/NoticiaExito');
+      } else {
+        showErrorModal(data.message || 'Error al registrar noticia');
       }
-    };
-    
-  const PickerField = ({ value, onValueChange, items, placeholder }: any) => {
-    return Platform.OS === 'ios' ? (
-      <View style={styles.selectContainer}>
-        <Picker
-          selectedValue={value}
-          onValueChange={onValueChange}
-          style={styles.picker}
-        >
-          <Picker.Item label={placeholder} value="" />
-          {items.map((item: any) => (
-            <Picker.Item key={item.value} label={item.label} value={item.value} />
-          ))}
-        </Picker>
-        <View style={styles.pickerArrows}>
-          <FontAwesome name="chevron-up" size={12} color="#666" />
-          <FontAwesome name="chevron-down" size={12} color="#666" />
-        </View>
-      </View>
-    ) : (
-      <View style={styles.selectContainer}>
-        <Picker
-          selectedValue={value}
-          onValueChange={onValueChange}
-          style={styles.picker}
-          mode="dropdown"
-        >
-          <Picker.Item label={placeholder} value="" />
-          {items.map((item: any) => (
-            <Picker.Item key={item.value} label={item.label} value={item.value} />
-          ))}
-        </Picker>
-      </View>
-    );
+    } catch (error) {
+      console.error('Error al enviar noticia:', error);
+      showErrorModal('No se pudo conectar al servidor');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <SafeAreaView style={styles.menuSuperior}>
       <Stack.Screen 
         options={{
-          headerTitle: " Nueva Denuncia",
+          headerTitle: "Nueva Noticia",
           headerStyle: {
             backgroundColor: '#2e5929',
           },
@@ -214,33 +167,52 @@ const showErrorModal = (message: string) => {
       />
       <ScrollView contentContainerStyle={styles.contenedor}>
         <View style={styles.seccion}>
-          <Text style={styles.seccionTitulo}>Descripcion del incidente *</Text>
+          <Text style={styles.seccionTitulo}>Título de la noticia *</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Ingrese el título"
+            placeholderTextColor="#8D6E63" 
+            value={titulo}
+            onChangeText={setTitulo}
+          />
+
+          <Text style={styles.seccionTitulo}>Descripción *</Text>
           <TextInput
             style={[styles.input, styles.multilineInput]}
-            placeholder="Ingrese una descripcion"
+            placeholder="Ingrese la descripción completa"
             placeholderTextColor="#8D6E63" 
             value={descripcion}
             onChangeText={setDescripcion}
             multiline
             numberOfLines={4}
           />
-        </View>
 
-        <View style={styles.seccion}>
-          <Text style={styles.seccionTitulo}>Modulos policiales *</Text>
-          <PickerField
-            value={moduloPolicial}
-            onValueChange={(value: string) => setModuloPolicial(value)}
-            items={modulosPoliciales}
-            placeholder="Seleccione un módulo policial"
-          />
+          <Text style={styles.seccionTitulo}>Fecha de publicación *</Text>
+          <TouchableOpacity 
+            style={styles.timePickerButton} 
+            onPress={() => setShowDatePicker(true)}
+          >
+            <Text style={styles.textoTiempo}>{formatDate(fechaPublicacion)}</Text>
+            <View style={styles.pickerArrows}>
+              <FontAwesome name="chevron-up" size={12} color="#666" />
+              <FontAwesome name="chevron-down" size={12} color="#666" />
+            </View>
+          </TouchableOpacity>
+          {showDatePicker && (
+            <DateTimePicker
+              value={fechaPublicacion}
+              mode="date"
+              display="default"
+              onChange={handleDateChange}
+            />
+          )}
 
-          <Text style={styles.seccionTitulo}>Hora del incidente *</Text>
+          <Text style={styles.seccionTitulo}>Hora de publicación *</Text>
           <TouchableOpacity 
             style={styles.timePickerButton} 
             onPress={() => setShowTimePicker(true)}
           >
-            <Text style={styles.textoTiempo}>{formatTime(horaIncidente)}</Text>
+            <Text style={styles.textoTiempo}>{formatTime(horaPublicacion)}</Text>
             <View style={styles.pickerArrows}>
               <FontAwesome name="chevron-up" size={12} color="#666" />
               <FontAwesome name="chevron-down" size={12} color="#666" />
@@ -248,30 +220,13 @@ const showErrorModal = (message: string) => {
           </TouchableOpacity>
           {showTimePicker && (
             <DateTimePicker
-              value={horaIncidente}
+              value={horaPublicacion}
               mode="time"
               is24Hour={true}
               display="default"
               onChange={handleTimeChange}
             />
           )}
-
-          <Text style={styles.seccionTitulo}>Tipo de incidente *</Text>
-          <PickerField
-            value={tipoIncidente}
-            onValueChange={(value: string) => setTipoIncidente(value)}
-            items={tiposIncidente}
-            placeholder="Tipo de incidente"
-          />
-
-          <Text style={styles.seccionTitulo}>Calle o Avenida *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Nombre de la calle"
-            placeholderTextColor="#8D6E63"
-            value={calleAvenida}
-            onChangeText={setCalleAvenida}
-          />
         </View>
 
         <View style={styles.seccionImagen}>
@@ -304,33 +259,34 @@ const showErrorModal = (message: string) => {
           {loading ? (
             <ActivityIndicator color="#000" />
           ) : (
-            <Text style={styles.submitButtonText}>Enviar Denuncia</Text>
+            <Text style={styles.submitButtonText}>Publicar Noticia</Text>
           )}
         </TouchableOpacity>
 
         <Modal
-            animationType="slide"
-            transparent={true}
-            visible={modalErrorVisible}
-            onRequestClose={() => setModalErrorVisible(false)}
-            >
-            <View style={styles.modalContainer}>
-                <View style={styles.modalContent}>
-                <Text style={styles.modalText}>{errorMessage}</Text>
-                <TouchableOpacity 
-                    style={styles.modalButton}
-                    onPress={() => setModalErrorVisible(false)}
-                >
-                    <Text style={styles.modalButtonText}>Entendido</Text>
-                </TouchableOpacity>
-                </View>
+          animationType="slide"
+          transparent={true}
+          visible={modalErrorVisible}
+          onRequestClose={() => setModalErrorVisible(false)}
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalText}>{errorMessage}</Text>
+              <TouchableOpacity 
+                style={styles.modalButton}
+                onPress={() => setModalErrorVisible(false)}
+              >
+                <Text style={styles.modalButtonText}>Entendido</Text>
+              </TouchableOpacity>
             </View>
+          </View>
         </Modal>
       </ScrollView>
     </SafeAreaView>
   );
 };
 
+// Los estilos se mantienen iguales
 const styles = StyleSheet.create({
   menuSuperior: {
     flex: 1,
@@ -470,8 +426,6 @@ const styles = StyleSheet.create({
     marginTop: 10,
     color: '#999',
   },
-
-  //Modal
   modalContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -503,4 +457,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default DenunciaScreen;
+export default NoticiaScreen;
