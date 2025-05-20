@@ -22,6 +22,7 @@ export default function RootLayout() {
         {/* La pantalla de login será la primera en mostrarse */}
         <Stack.Screen name="auth/login" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="(policia)" options={{ headerShown: false }} />
         <Stack.Screen 
           name="auth/DenunciaExito" 
           options={{ 

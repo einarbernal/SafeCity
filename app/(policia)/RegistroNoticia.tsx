@@ -36,7 +36,7 @@ const NoticiaScreen = () => {
     setModalErrorVisible(true);
   };
 
-  const SERVER_IP = '192.168.31.104';
+  const SERVER_IP = '192.168.1.66';
   const API_URL = `http://${SERVER_IP}:3000/noticias`;
 
   // Obtener ID del usuario al cargar el componente

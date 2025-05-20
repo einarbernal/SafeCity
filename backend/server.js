@@ -295,7 +295,7 @@ app.post('/atenderDenuncia', async (req, res) => {
   try {
     await pool.query(
       'UPDATE denuncia SET estado = ? WHERE id_denuncia = ?',
-      ['atendido', idDenuncia]
+      ['ATENDIDO', idDenuncia]
     );
 
     const [rows] = await pool.query(
@@ -321,7 +321,7 @@ app.get('/denunciasAtendidas', async (req, res) => {
     const [denuncias] = await pool.query(`
       SELECT *
       FROM denuncia
-      WHERE estado = 'atendido'
+      WHERE estado = 'ATENDIDO'
       ORDER BY fecha DESC, hora DESC
     `);
 
