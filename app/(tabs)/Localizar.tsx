@@ -3,6 +3,7 @@ import { Stack } from 'expo-router';
 import React, { useRef, useState } from 'react';
 import { Dimensions, FlatList, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import MapView, { Callout, Marker, Polygon } from 'react-native-maps';
+import HamburgerMenu from '../auth/MenuHamburguesa';
 
 const { width, height } = Dimensions.get('window');
 
@@ -154,7 +155,10 @@ export default function MapScreen() {
           headerTitle: "Cochabamba",
           headerStyle: { backgroundColor: '#2e5929' },
           headerTintColor: '#fff',
-          headerTitleStyle: { fontWeight: 'bold' },
+          headerTitleStyle: {
+            fontWeight: 'bold',
+          },
+          headerLeft: ()=> <HamburgerMenu/>
         }}
       />
 

@@ -336,7 +336,51 @@ app.get('/denunciasAtendidas', async (req, res) => {
 });
 
 
+// Ruta para actualizar perfil
+app.put('/perfil', async (req, res) => {
+  const { id_ciudadano, nombres, apellido_paterno, apellido_materno, correo } = req.body;
 
+  if (!id_ciudadano || !nombres || !apellido_paterno || !apellido_materno || !correo) {
+    return res.status(400).json({ 
+      success: false,
+      message: 'Todos los campos son requeridos' 
+    });
+  }
+
+  try {
+    // Verificar si el correo ya existe (excluyendo al usuario actual)
+    const [existingUsers] = await pool.query(
+      'SELECT id_ciudadano FROM ciudadano WHERE correo = ? AND id_ciudadano != ?',
+      [correo, id_ciudadano]
+    );
+
+    if (existingUsers.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'El correo electrónico ya está registrado por otro usuario'
+      });
+    }
+
+    // Actualizar datos del ciudadano
+    await pool.query(
+      `UPDATE ciudadano 
+      SET nombres = ?, apellido_paterno = ?, apellido_materno = ?, correo = ?
+      WHERE id_ciudadano = ?`,
+      [nombres, apellido_paterno, apellido_materno, correo, id_ciudadano]
+    );
+
+    res.json({ 
+      success: true,
+      message: 'Perfil actualizado exitosamente'
+    });
+  } catch (error) {
+    console.error('Error al actualizar perfil:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Error al actualizar el perfil en la base de datos' 
+    });
+  }
+});
 
 
 
