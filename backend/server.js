@@ -383,7 +383,118 @@ app.put('/perfil', async (req, res) => {
 });
 
 
+// Rutas para obtener denuncias de un usuario específico
+// Agregar estas rutas a server.js
 
+// Ruta para obtener denuncias atendidas de un usuario específico
+app.get('/denunciasUsuario/atendidas/:idCiudadano', async (req, res) => {
+  const { idCiudadano } = req.params;
+
+  try {
+    const [denuncias] = await pool.query(`
+      SELECT *
+      FROM denuncia
+      WHERE estado = 'ATENDIDO' AND id_ciudadano = ?
+      ORDER BY fecha DESC, hora DESC
+    `, [idCiudadano]);
+
+    res.json(denuncias);
+  } catch (error) {
+    console.error('Error al obtener denuncias atendidas del usuario:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error en el servidor al obtener denuncias atendidas'
+    });
+  }
+});
+
+// Ruta para obtener denuncias pendientes de un usuario específico
+app.get('/denunciasUsuario/pendientes/:idCiudadano', async (req, res) => {
+  const { idCiudadano } = req.params;
+
+  try {
+    const [denuncias] = await pool.query(`
+      SELECT *
+      FROM denuncia
+      WHERE estado = 'PENDIENTE' AND id_ciudadano = ?
+      ORDER BY fecha DESC, hora DESC
+    `, [idCiudadano]);
+
+    res.json(denuncias);
+  } catch (error) {
+    console.error('Error al obtener denuncias pendientes del usuario:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error en el servidor al obtener denuncias pendientes'
+    });
+  }
+});
+
+// Ruta para obtener una denuncia específica por su ID
+app.get('/denuncia/:idDenuncia', async (req, res) => {
+  const { idDenuncia } = req.params;
+
+  try {
+    const [denuncias] = await pool.query(
+      'SELECT * FROM denuncia WHERE id_denuncia = ?',
+      [idDenuncia]
+    );
+
+    if (denuncias.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Denuncia no encontrada'
+      });
+    }
+
+    res.json({
+      success: true,
+      denuncia: denuncias[0]
+    });
+  } catch (error) {
+    console.error('Error al obtener denuncia:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error en el servidor al obtener la denuncia'
+    });
+  }
+});
+
+// Ruta para actualizar una denuncia existente
+app.put('/denuncia/:idDenuncia', async (req, res) => {
+  const { idDenuncia } = req.params;
+  const { descripcion, modulo_epi, hora, fecha, tipo, calle_avenida, evidencia } = req.body;
+
+  // Validaciones básicas
+  if (!descripcion || !modulo_epi || !hora || !fecha || !tipo || !calle_avenida) {
+    return res.status(400).json({ 
+      success: false,
+      message: 'Todos los campos obligatorios son requeridos' 
+    });
+  }
+
+  try {
+    // Actualizar la denuncia
+    await pool.query(
+      `UPDATE denuncia 
+       SET descripcion = ?, modulo_epi = ?, hora = ?, fecha = ?, 
+           tipo = ?, calle_avenida = ?, evidencia = ?
+       WHERE id_denuncia = ?`,
+      [descripcion, modulo_epi, hora, fecha, tipo, calle_avenida, evidencia || null, idDenuncia]
+    );
+
+    res.json({
+      success: true,
+      message: 'Denuncia actualizada exitosamente'
+    });
+  } catch (error) {
+    console.error('Error al actualizar denuncia:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error en el servidor al actualizar la denuncia'
+    });
+  }
+});
   
 // Iniciar servidor
 app.listen(PORT, () => {

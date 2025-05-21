@@ -16,7 +16,7 @@ const DenunciaExito = () => {
       
       <TouchableOpacity 
         style={styles.buttonR}
-        onPress={() => router.push('/(tabs)/explore')}
+        onPress={() => router.push('/(tabs)/Historial')}
       >
         <FontAwesome/>
         <Text style={styles.buttonTextR}>Ver mis reportes</Text>
