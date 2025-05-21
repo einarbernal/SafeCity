@@ -75,10 +75,14 @@ const policeStations: PoliceStation[] = [
     name: 'EPI Nro 5: ALALAY',
     jurisdictionColor: '#F5FF33', // Amarillo
     jurisdictionArea: [
-      { latitude: -17.410, longitude: -66.145 },
-      { latitude: -17.410, longitude: -66.125 },
-      { latitude: -17.430, longitude: -66.125 },
-      { latitude: -17.430, longitude: -66.145 },
+       { latitude: -17.415, longitude: -66.142 },  // Punto noroeste (extendido)
+    { latitude: -17.412, longitude: -66.138 },  // Protuberancia hacia el norte
+    { latitude: -17.410, longitude: -66.133 },  // Punto norte irregular
+    { latitude: -17.413, longitude: -66.128 },  // Valle este
+    { latitude: -17.422, longitude: -66.126 },  // Punto sureste (extendido)
+    { latitude: -17.428, longitude: -66.131 },  // Curva sur
+    { latitude: -17.425, longitude: -66.140 },  // Punto suroeste irregular
+    { latitude: -17.420, longitude: -66.143 }
     ],
   },
   {

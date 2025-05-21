@@ -1,6 +1,6 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack, Redirect } from 'expo-router';
+import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
@@ -22,6 +22,7 @@ export default function RootLayout() {
         {/* La pantalla de login será la primera en mostrarse */}
         <Stack.Screen name="auth/login" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="(policia)" options={{ headerShown: false }} />
         <Stack.Screen 
           name="auth/DenunciaExito" 
           options={{ 

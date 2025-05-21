@@ -31,7 +31,8 @@ const DenunciaScreen = () => {
     setModalErrorVisible(true);
   };
 
-  const SERVER_IP = '192.168.0.13';
+
+  const SERVER_IP = '192.168.31.104';
   const API_URL = `http://${SERVER_IP}:3000/denuncias`;
 
   useEffect(() => {

@@ -23,7 +23,7 @@ const LoginScreen = () => {
 
 
   // Configuración del servidor
-  const SERVER_IP = '192.168.26.7'; // Cambia por tu IP
+  const SERVER_IP = '192.168.31.104'; // Cambia por tu IP
 
   const API_URL = `http://${SERVER_IP}:3000/login`;
 
@@ -37,39 +37,53 @@ const LoginScreen = () => {
     setError('');
 
     try {
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ correo, contraseña }),
+  const response = await fetch(API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ correo, contraseña }),
+  });
+
+  const data = await response.json();
+
+  if (data.success) {
+    // Guardar datos del usuario/policía
+    await AsyncStorage.setItem('userData', JSON.stringify(data.usuario));
+    
+    // Redirigir según el tipo de usuario
+    if (data.usuario.id_ciudadano) {
+      // Redirigir al área de ciudadano
+      router.replace({
+        pathname: '/(tabs)',
+        params: {
+          idCiudadano: data.usuario.id_ciudadano,
+          nombres: data.usuario.nombres,
+          apellidos: `${data.usuario.apellido_paterno} ${data.usuario.apellido_materno}`
+        }
       });
-
-      const data = await response.json();
-
-      if (data.success) {
-        // Guardar datos del usuario
-        await AsyncStorage.setItem('userData', JSON.stringify(data.ciudadano));
-        
-        // Redirigir al área principal
-        router.replace({
-          pathname: '/(tabs)',
-          params: {
-            idCiudadano: data.ciudadano.id_ciudadano,
-            nombres: data.ciudadano.nombres,
-            apellidos: `${data.ciudadano.apellido_paterno} ${data.ciudadano.apellido_materno}`
-          }
-        });
-      } else {
-        setError(data.message || 'Credenciales incorrectas');
-      }
-    } catch (err) {
-      setError('Error de conexión con el servidor');
-      console.error('Login error:', err);
-    } finally {
-      setLoading(false);
+    } else if (data.usuario.id_policia) {
+      // Redirigir al área policial
+      router.replace({
+        pathname: '/(policia)/RegistroNoticia',
+        params: {
+          idPolicia: data.usuario.id_policia,
+          nombres: data.usuario.nombres,
+          apellidos: `${data.usuario.apellido_paterno} ${data.usuario.apellido_materno}`,
+         
+        }
+      });
     }
-  };
+  } else {
+    setError(data.message || 'Credenciales incorrectas');
+  }
+} catch (err) {
+  setError('Error de conexión con el servidor');
+  console.error('Login error:', err);
+} finally {
+  setLoading(false);
+}
+  }
 
   return (
     <KeyboardAvoidingView
