@@ -19,21 +19,22 @@ const DenunciaScreen = () => {
   const [idCiudadano, setIdCiudadano] = useState<number | null>(null);
   const router = useRouter();
 
+  // Estados para manejar los pickers en iOS
+  const [showPickerModal, setShowPickerModal] = useState(false);
+  const [currentPicker, setCurrentPicker] = useState<'modulo' | 'tipo' | null>(null);
 
-const [modalErrorVisible, setModalErrorVisible] = useState(false);
-const [errorMessage, setErrorMessage] = useState('');
-  
+  const [modalErrorVisible, setModalErrorVisible] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
-const showErrorModal = (message: string) => {
+  const showErrorModal = (message: string) => {
     setErrorMessage(message);
     setModalErrorVisible(true);
-};
+  };
 
 
   const SERVER_IP = '192.168.31.104';
   const API_URL = `http://${SERVER_IP}:3000/denuncias`;
 
-  // Obtener ID del ciudadano al cargar el componente
   useEffect(() => {
     const loadUserData = async () => {
       try {
@@ -50,7 +51,6 @@ const showErrorModal = (message: string) => {
     loadUserData();
   }, []);
 
-  // Datos para los ComboBox
   const modulosPoliciales = [
     { label: 'EPI Nº 5 ALALAY', value: 'EPI_N5_Alalay' },
     { label: 'EPI Nº 1 COÑA COÑA', value: 'EPI_N1_Coña Coña' },
@@ -99,9 +99,8 @@ const showErrorModal = (message: string) => {
   };
 
   const formatDate = (date: Date) => {
-    return date.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+    return date.toISOString().split('T')[0];
   };
-
 
   const handleSubmit = async () => {
     if (!descripcion) {
@@ -124,7 +123,7 @@ const showErrorModal = (message: string) => {
       showErrorModal('No se pudo identificar al usuario. Por favor, inicie sesión nuevamente.');
       return;
     }
-  
+
     setLoading(true);
 
     const denunciaData = {
@@ -140,63 +139,171 @@ const showErrorModal = (message: string) => {
     };
 
     try {
-        const response = await fetch(API_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(denunciaData),
-        });
-    
-        const data = await response.json();
-    
-        if (data.success) {
-          router.push('/auth/DenunciaExito');
-        } else {
-          showErrorModal(data.message || 'Error al registrar denuncia');
-        }
-      } catch (error) {
-        console.error('Error al enviar denuncia:', error);
-        showErrorModal('No se pudo conectar al servidor');
-      } finally {
-        setLoading(false);
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(denunciaData),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        router.push('/auth/DenunciaExito');
+      } else {
+        showErrorModal(data.message || 'Error al registrar denuncia');
       }
-    };
-    
-  const PickerField = ({ value, onValueChange, items, placeholder }: any) => {
-    return Platform.OS === 'ios' ? (
-      <View style={styles.selectContainer}>
-        <Picker
-          selectedValue={value}
-          onValueChange={onValueChange}
-          style={styles.picker}
-        >
-          <Picker.Item label={placeholder} value="" />
-          {items.map((item: any) => (
-            <Picker.Item key={item.value} label={item.label} value={item.value} />
-          ))}
-        </Picker>
-        <View style={styles.pickerArrows}>
-          <FontAwesome name="chevron-up" size={12} color="#666" />
-          <FontAwesome name="chevron-down" size={12} color="#666" />
+    } catch (error) {
+      console.error('Error al enviar denuncia:', error);
+      showErrorModal('No se pudo conectar al servidor');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const renderPicker = () => {
+    if (Platform.OS === 'android') {
+      return (
+        <>
+          <Text style={styles.seccionTitulo}>Módulos policiales *</Text>
+          <View style={styles.selectContainer}>
+            <Picker
+              selectedValue={moduloPolicial}
+              onValueChange={(value) => setModuloPolicial(value)}
+              style={styles.picker}
+              mode="dropdown"
+            >
+              <Picker.Item label="Seleccione un módulo policial" value="" />
+              {modulosPoliciales.map((item) => (
+                <Picker.Item key={item.value} label={item.label} value={item.value} />
+              ))}
+            </Picker>
+          </View>
+
+          <Text style={styles.seccionTitulo}>Tipo de incidente *</Text>
+          <View style={styles.selectContainer}>
+            <Picker
+              selectedValue={tipoIncidente}
+              onValueChange={(value) => setTipoIncidente(value)}
+              style={styles.picker}
+              mode="dropdown"
+            >
+              <Picker.Item label="Seleccione un tipo de incidente" value="" />
+              {tiposIncidente.map((item) => (
+                <Picker.Item key={item.value} label={item.label} value={item.value} />
+              ))}
+            </Picker>
+          </View>
+        </>
+      );
+    } else {
+      return (
+        <>
+          <Text style={styles.seccionTitulo}>Módulos policiales *</Text>
+          <TouchableOpacity 
+            style={styles.selectContainer} 
+            onPress={() => {
+              setCurrentPicker('modulo');
+              setShowPickerModal(true);
+            }}
+          >
+            <Text style={styles.pickerText}>
+              {moduloPolicial ? modulosPoliciales.find(m => m.value === moduloPolicial)?.label : 'Seleccione un módulo policial'}
+            </Text>
+            <FontAwesome name="chevron-down" size={16} color="#666" />
+          </TouchableOpacity>
+
+          <Text style={styles.seccionTitulo}>Tipo de incidente *</Text>
+          <TouchableOpacity 
+            style={styles.selectContainer} 
+            onPress={() => {
+              setCurrentPicker('tipo');
+              setShowPickerModal(true);
+            }}
+          >
+            <Text style={styles.pickerText}>
+              {tipoIncidente ? tiposIncidente.find(t => t.value === tipoIncidente)?.label : 'Seleccione un tipo de incidente'}
+            </Text>
+            <FontAwesome name="chevron-down" size={16} color="#666" />
+          </TouchableOpacity>
+        </>
+      );
+    }
+  };
+
+   const renderPickerModal = () => (
+  <Modal
+    visible={showPickerModal}
+    transparent={true}
+    animationType="slide"
+    onRequestClose={() => setShowPickerModal(false)}
+  >
+    <View style={styles.pickerModalContainer}>
+      <TouchableOpacity 
+        style={styles.pickerModalBackdrop}
+        activeOpacity={1}
+        onPress={() => setShowPickerModal(false)}
+      />
+      <View style={styles.pickerModalContent}>
+        <View style={styles.pickerHeader}>
+          <TouchableOpacity 
+            onPress={() => setShowPickerModal(false)}
+            style={styles.pickerButton}
+          >
+            <Text style={styles.pickerButtonText}>Cancelar</Text>
+          </TouchableOpacity>
+          <View style={styles.pickerTitleContainer}>
+            <Text style={styles.pickerTitle}>
+              {currentPicker === 'modulo' ? 'Seleccione módulo policial' : 'Seleccione tipo de incidente'}
+            </Text>
+          </View>
+          <TouchableOpacity 
+            onPress={() => setShowPickerModal(false)}
+            style={styles.pickerButton}
+          >
+            <Text style={[styles.pickerButtonText, styles.pickerButtonTextConfirm]}>Listo</Text>
+          </TouchableOpacity>
+        </View>
+        
+        <View style={styles.pickerContainer}>
+          <Picker
+            selectedValue={currentPicker === 'modulo' ? moduloPolicial : tipoIncidente}
+            onValueChange={(value) => {
+              if (currentPicker === 'modulo') {
+                setModuloPolicial(value);
+              } else {
+                setTipoIncidente(value);
+              }
+            }}
+            style={styles.picker}
+            itemStyle={styles.pickerItem}
+          >
+            {currentPicker === 'modulo' ? (
+              modulosPoliciales.map((item) => (
+                <Picker.Item 
+                  key={item.value} 
+                  label={item.label} 
+                  value={item.value} 
+                />
+              ))
+            ) : (
+              tiposIncidente.map((item) => (
+                <Picker.Item 
+                  key={item.value} 
+                  label={item.label} 
+                  value={item.value} 
+                />
+              ))
+            )}
+          </Picker>
         </View>
       </View>
-    ) : (
-      <View style={styles.selectContainer}>
-        <Picker
-          selectedValue={value}
-          onValueChange={onValueChange}
-          style={styles.picker}
-          mode="dropdown"
-        >
-          <Picker.Item label={placeholder} value="" />
-          {items.map((item: any) => (
-            <Picker.Item key={item.value} label={item.label} value={item.value} />
-          ))}
-        </Picker>
-      </View>
-    );
-  };
+    </View>
+  </Modal>
+);
+
+  
 
   return (
     <SafeAreaView style={styles.menuSuperior}>
@@ -214,10 +321,10 @@ const showErrorModal = (message: string) => {
       />
       <ScrollView contentContainerStyle={styles.contenedor}>
         <View style={styles.seccion}>
-          <Text style={styles.seccionTitulo}>Descripcion del incidente *</Text>
+          <Text style={styles.seccionTitulo}>Descripción del incidente *</Text>
           <TextInput
             style={[styles.input, styles.multilineInput]}
-            placeholder="Ingrese una descripcion"
+            placeholder="Ingrese una descripción"
             placeholderTextColor="#8D6E63" 
             value={descripcion}
             onChangeText={setDescripcion}
@@ -227,13 +334,7 @@ const showErrorModal = (message: string) => {
         </View>
 
         <View style={styles.seccion}>
-          <Text style={styles.seccionTitulo}>Modulos policiales *</Text>
-          <PickerField
-            value={moduloPolicial}
-            onValueChange={(value: string) => setModuloPolicial(value)}
-            items={modulosPoliciales}
-            placeholder="Seleccione un módulo policial"
-          />
+          {renderPicker()}
 
           <Text style={styles.seccionTitulo}>Hora del incidente *</Text>
           <TouchableOpacity 
@@ -241,10 +342,7 @@ const showErrorModal = (message: string) => {
             onPress={() => setShowTimePicker(true)}
           >
             <Text style={styles.textoTiempo}>{formatTime(horaIncidente)}</Text>
-            <View style={styles.pickerArrows}>
-              <FontAwesome name="chevron-up" size={12} color="#666" />
-              <FontAwesome name="chevron-down" size={12} color="#666" />
-            </View>
+            <FontAwesome name="chevron-down" size={16} color="#666" />
           </TouchableOpacity>
           {showTimePicker && (
             <DateTimePicker
@@ -255,14 +353,6 @@ const showErrorModal = (message: string) => {
               onChange={handleTimeChange}
             />
           )}
-
-          <Text style={styles.seccionTitulo}>Tipo de incidente *</Text>
-          <PickerField
-            value={tipoIncidente}
-            onValueChange={(value: string) => setTipoIncidente(value)}
-            items={tiposIncidente}
-            placeholder="Tipo de incidente"
-          />
 
           <Text style={styles.seccionTitulo}>Calle o Avenida *</Text>
           <TextInput
@@ -308,23 +398,25 @@ const showErrorModal = (message: string) => {
           )}
         </TouchableOpacity>
 
+        {renderPickerModal()}
+
         <Modal
-            animationType="slide"
-            transparent={true}
-            visible={modalErrorVisible}
-            onRequestClose={() => setModalErrorVisible(false)}
-            >
-            <View style={styles.modalContainer}>
-                <View style={styles.modalContent}>
-                <Text style={styles.modalText}>{errorMessage}</Text>
-                <TouchableOpacity 
-                    style={styles.modalButton}
-                    onPress={() => setModalErrorVisible(false)}
-                >
-                    <Text style={styles.modalButtonText}>Entendido</Text>
-                </TouchableOpacity>
-                </View>
+          animationType="slide"
+          transparent={true}
+          visible={modalErrorVisible}
+          onRequestClose={() => setModalErrorVisible(false)}
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalText}>{errorMessage}</Text>
+              <TouchableOpacity 
+                style={styles.modalButton}
+                onPress={() => setModalErrorVisible(false)}
+              >
+                <Text style={styles.modalButtonText}>Entendido</Text>
+              </TouchableOpacity>
             </View>
+          </View>
         </Modal>
       </ScrollView>
     </SafeAreaView>
@@ -384,6 +476,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
+  pickerText: {
+    fontSize: 16,
+    color: '#333',
+  },
   selectContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -394,29 +490,73 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     borderWidth: 1,
     borderRadius: 5,
+    paddingHorizontal: 15,
     marginBottom: 15,
-    overflow: 'hidden',
+  },
+
+  // Estilos mejorados para el Picker Modal en iOS
+  pickerModalContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  pickerModalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'transparent',
+  },
+   pickerModalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    maxHeight: '50%',
+    paddingBottom: 20,
+  },
+  pickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  pickerTitleContainer: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  pickerTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#2e5929',
+  },
+  pickerButton: {
+    minWidth: 8,
+    padding: 10,
+  },
+  pickerButtonText: {
+    fontSize: 15,
+    color: '#666',
+  },
+  pickerButtonTextConfirm: {
+    color: '#2e5929',
+    fontWeight: 'bold',
+  },
+  pickerContainer: {
+    height: 80, // Aumenta esta altura para mostrar más opciones
   },
   picker: {
-    flex: 1,
-    height: 50,
+    width: '100%',
+    height: '100%',
+  },
+  pickerItem: {
+    fontSize: 20,
     color: '#333',
+    height: 40, // Altura de cada item
   },
-  pickerArrows: {
-    flexDirection: 'column',
-    justifyContent: 'space-between',
-    height: 30,
-    paddingRight: 15,
-  },
+
+  // Resto de estilos...
   seccionImagen: {
     alignItems: 'center',
     marginBottom: 20,
-  },
-  placeholderImage: {
-    width: '70%',
-    height: 300,
-    borderRadius: 8,
-    marginBottom: 10,
   },
   seleccionDeImagen: {
     width: '90%',
@@ -425,7 +565,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   uploadButton: {
-    flexDirection: 'column',
+    flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 10,
@@ -450,7 +590,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     marginTop: 10,
     marginBottom: 20,
-    borderWidth:1
+    borderWidth: 1
   },
   submitButtonText: {
     color: '#000',
@@ -470,8 +610,6 @@ const styles = StyleSheet.create({
     marginTop: 10,
     color: '#999',
   },
-
-  //Modal
   modalContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -502,5 +640,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 });
+ 
+
 
 export default DenunciaScreen;
