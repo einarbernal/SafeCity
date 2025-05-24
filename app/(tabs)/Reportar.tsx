@@ -32,7 +32,7 @@ const DenunciaScreen = () => {
   };
 
 
-  const SERVER_IP = '192.168.31.104';
+  const SERVER_IP = '192.168.1.66';
   const API_URL = `http://${SERVER_IP}:3000/denuncias`;
 
   useEffect(() => {
@@ -129,8 +129,8 @@ const DenunciaScreen = () => {
     const denunciaData = {
       descripcion,
       modulo_epi: moduloPolicial,
-      hora: formatTime(horaIncidente),
-      fecha: formatDate(new Date()),
+      hora: `${horaIncidente.getHours()}:${horaIncidente.getMinutes()}`,
+      fecha: formatDate(horaIncidente),
       tipo: tipoIncidente,
       calle_avenida: calleAvenida,
       evidencia: selectedImage || '',
