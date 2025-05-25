@@ -20,6 +20,7 @@ export default function RootLayout() {
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
         {/* La pantalla de login será la primera en mostrarse */}
+        <Stack.Screen name="auth" options={{ headerShown: false }} />
         <Stack.Screen name="auth/login" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="(policia)" options={{ headerShown: false }} />
@@ -31,7 +32,7 @@ export default function RootLayout() {
           }} 
         />
         <Stack.Screen name="+not-found" options={{ headerShown: false }} />
-        <Stack.Screen name="auth" options={{ headerShown: false }} />
+        
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
