@@ -17,6 +17,7 @@ interface Denuncia {
   evidencia: string | null;
   estado: string;
   id_ciudadano: number;
+  fue_modificada:number;
   mostrarModificar?: boolean;
   minutosRestantes?: number;
   fechaRegistroStr?: string;
@@ -92,7 +93,7 @@ const HistorialScreen = () => {
       } else {
         console.error('Error al obtener denuncias atendidas:', responseAtendidas.status);
       }
-
+  
       // Obtener denuncias pendientes (usando el endpoint original)
       const responsePendientes = await fetch(`${API_URL_PENDIENTES}/${userId}`, {
         method: 'GET',
@@ -108,7 +109,7 @@ const HistorialScreen = () => {
       } else {
         console.error('Error al obtener denuncias pendientes:', responsePendientes.status);
       }
-
+  
       // Procesar denuncias pendientes para determinar si se pueden modificar
       const now = new Date();
       const pendientesProcesadas = pendientesData.map((denuncia) => {
@@ -119,14 +120,19 @@ const HistorialScreen = () => {
             console.error('Fecha inválida:', denuncia.fecha, denuncia.hora);
             return { ...denuncia, mostrarModificar: false, minutosRestantes: 0 };
           }
-
+  
           const diffMs = now.getTime() - fechaRegistro.getTime();
           const diffMinutes = diffMs / (1000 * 60);
           
+          // Solo mostrar el botón de modificar si:
+          // 1. No ha sido modificada antes (fue_modificada = 0)
+          // 2. Está dentro del tiempo límite (10 minutos)
+          const puedeModificar = denuncia.fue_modificada === 0 && diffMinutes <= 10;
+          
           return {
             ...denuncia,
-            mostrarModificar: diffMinutes <= 10,
-            minutosRestantes: Math.max(0, Math.floor(10 - diffMinutes)),
+            mostrarModificar: puedeModificar,
+            minutosRestantes: puedeModificar ? Math.max(0, Math.floor(10 - diffMinutes)) : 0,
             fechaRegistroStr: fechaRegistro.toLocaleString() // Para debug
           };
         } catch (error) {
@@ -134,10 +140,10 @@ const HistorialScreen = () => {
           return { ...denuncia, mostrarModificar: false, minutosRestantes: 0 };
         }
       });
-
+  
       setAtendidos(atendidosData);
       setPendientes(pendientesProcesadas);
-
+  
     } catch (error) {
       console.error('Error al obtener denuncias:', error);
     } finally {
@@ -145,7 +151,6 @@ const HistorialScreen = () => {
       setRefreshing(false);
     }
   };
-
   // Función para manejar el pull-to-refresh
   const onRefresh = React.useCallback(() => {
     if (idCiudadano) {
@@ -212,13 +217,20 @@ const HistorialScreen = () => {
           <Text style={styles.tipo}>{denuncia.tipo.toLowerCase().charAt(0).toUpperCase() + denuncia.tipo.toLowerCase().slice(1)}</Text>
           <Text style={styles.fecha}>{formatDate(denuncia.fecha)} </Text>
           
-          {denuncia.mostrarModificar && (
+          {/* Mostrar mensaje según el estado de modificación */}
+          {denuncia.fue_modificada === 1 ? (
+            <View style={styles.modificarContainer}>
+              <Text style={styles.denunciaModificada}>
+                ✓ Denuncia modificada
+              </Text>
+            </View>
+          ) : denuncia.mostrarModificar ? (
             <View style={styles.modificarContainer}>
               <Text style={styles.timeRemaining}>
                 Tiempo para modificar: {denuncia.minutosRestantes} min
               </Text>
             </View>
-          )}
+          ) : null}
         </View>
         {denuncia.mostrarModificar && (
           <TouchableOpacity 
@@ -374,6 +386,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
     marginBottom: 20,
+  },
+  denunciaModificada: {
+    fontSize: 15,
+    color: '#4CAF50', // Verde para indicar que ya fue modificada
+    fontStyle: 'italic',
+    fontWeight: 'bold',
   },
 });
 
