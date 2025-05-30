@@ -23,7 +23,7 @@ const LoginScreen = () => {
 
 
   // Configuración del servidor
-  const SERVER_IP = '192.168.1.66'; // Cambia por tu IP
+  const SERVER_IP = '192.168.31.104'; // Cambia por tu IP
 
   const API_URL = `http://${SERVER_IP}:3000/login`;
 

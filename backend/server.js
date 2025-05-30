@@ -8,7 +8,8 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(express.json());
+app.use(express.json({ limit: '2mb' }));
+app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 app.use(cors());
 
 // Configuración de la base de datos
@@ -159,20 +160,40 @@ app.post('/denuncias', async (req, res) => {
 });
 
 
-// Ruta para crear Noticias
 app.post('/noticias', async (req, res) => {
   const { titulo, descripcion, hora, fecha, imagen, idPolicia } = req.body;
 
+  // Debug
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Body recibido:', req.body);
+  }
+
   // Validaciones básicas
-  if (!titulo || !descripcion || !hora || !fecha || !imagen || !idPolicia) {
+  if (!titulo || !descripcion || !hora || !fecha || !idPolicia) {
     return res.status(400).json({ 
       success: false,
       message: 'Todos los campos obligatorios son requeridos' 
     });
   }
 
+  // Validar que idPolicia sea un número
+  if (isNaN(idPolicia)) {
+    return res.status(400).json({
+      success: false,
+      message: 'ID de policía no válido'
+    });
+  }
+
+  // Validación de URL de Cloudinary (solo si hay imagen)
+  if (imagen && !imagen.startsWith('https://res.cloudinary.com/')) {
+    return res.status(400).json({
+      success: false,
+      message: 'Formato de imagen no válido. Debe ser una URL de Cloudinary'
+    });
+  }
+
   try {
-    // Verificar que el policía existe
+    // Verificar si el policía existe
     const [policia] = await pool.query(
       'SELECT id_policia FROM policia WHERE id_policia = ?',
       [idPolicia]
@@ -185,35 +206,29 @@ app.post('/noticias', async (req, res) => {
       });
     }
 
-    // Insertar la noticia directamente sin transacción
+    // Insertar la noticia
     const [noticiaResult] = await pool.query(
       `INSERT INTO noticia 
-      (titulo, descripcion, hora, fecha, imagen, id_policia) 
-      VALUES (?, ?, ?, ?, ?, ?)`,
-      [titulo, descripcion, hora, fecha, imagen, idPolicia]
+       (titulo, descripcion, hora, fecha, imagen, id_policia) 
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [titulo, descripcion, hora, fecha, imagen || null, idPolicia]
     );
-
-    const noticiaId = noticiaResult.insertId;
 
     res.json({ 
       success: true,
       message: 'Noticia registrada exitosamente',
-      noticiaId
+      noticiaId: noticiaResult.insertId
     });
 
   } catch (error) {
     console.error('Error al registrar noticia:', error);
-    
     res.status(500).json({ 
       success: false,
       message: 'Error al registrar la noticia en la base de datos',
-      error: error.message // Opcional: incluir el mensaje de error para debugging
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
-
-
-
 
 // Ruta para registro de ciudadanos
 app.post('/registro', async (req, res) => {
@@ -266,20 +281,23 @@ app.post('/registro', async (req, res) => {
 app.get('/casosPendientes', async (req, res) => {
   try {
     const [casos] = await pool.query(`
-      SELECT *
-      FROM denuncia
-      WHERE estado = 'pendiente'
+      SELECT 
+        d.*,
+        CONCAT(c.nombres, ' ', c.apellido_paterno, ' ', c.apellido_materno) AS nombre_denunciante
+      FROM denuncia d
+      JOIN ciudadano c ON d.id_ciudadano = c.id_ciudadano
+      WHERE d.estado = 'pendiente'
       ORDER BY
-        CASE tipo
+        CASE d.tipo
           WHEN 'ASESINATO'            THEN 1
           WHEN 'asalto'               THEN 2
           WHEN 'accidente de transito' THEN 3
-          ELSE 4                      -- otros tipos al final
+          ELSE 4
         END,
-        fecha DESC, hora DESC         -- opcional: desempata por fecha/hora
+        d.fecha DESC, d.hora DESC
     `);
 
-    res.json(casos);  // devuelve el array ya ordenado
+    res.json(casos);
   } catch (error) {
     console.error('Error al obtener casos pendientes:', error);
     res.status(500).json({
@@ -319,10 +337,13 @@ app.post('/atenderDenuncia', async (req, res) => {
 app.get('/denunciasAtendidas', async (req, res) => {
   try {
     const [denuncias] = await pool.query(`
-      SELECT *
-      FROM denuncia
-      WHERE estado = 'ATENDIDO'
-      ORDER BY fecha DESC, hora DESC
+      SELECT 
+        d.*,
+        CONCAT(c.nombres, ' ', c.apellido_paterno, ' ', c.apellido_materno) AS nombre_denunciante
+      FROM denuncia d
+      JOIN ciudadano c ON d.id_ciudadano = c.id_ciudadano
+      WHERE d.estado = 'ATENDIDO'
+      ORDER BY d.fecha DESC, d.hora DESC
     `);
 
     res.json(denuncias);
