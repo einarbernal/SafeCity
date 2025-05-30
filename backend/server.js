@@ -439,8 +439,36 @@ app.get('/denunciasUsuario/pendientes/:idCiudadano', async (req, res) => {
       FROM denuncia
       WHERE estado = 'PENDIENTE' AND id_ciudadano = ?
       ORDER BY fecha DESC, hora DESC
-    `, [idCiudadano]);
-
+    `, [idCiudadano]);// Ruta para obtener una denuncia específica por su ID
+    app.get('/denuncia/:idDenuncia', async (req, res) => {
+      const { idDenuncia } = req.params;
+    
+      try {
+        const [denuncias] = await pool.query(
+          'SELECT * FROM denuncia WHERE id_denuncia = ?',
+          [idDenuncia]
+        );
+    
+        if (denuncias.length === 0) {
+          return res.status(404).json({
+            success: false,
+            message: 'Denuncia no encontrada'
+          });
+        }
+    
+        res.json({
+          success: true,
+          denuncia: denuncias[0]
+        });
+      } catch (error) {
+        console.error('Error al obtener denuncia:', error);
+        res.status(500).json({
+          success: false,
+          message: 'Error en el servidor al obtener la denuncia'
+        });
+      }
+    });
+    
     res.json(denuncias);
   } catch (error) {
     console.error('Error al obtener denuncias pendientes del usuario:', error);
@@ -495,11 +523,54 @@ app.put('/denuncia/:idDenuncia', async (req, res) => {
   }
 
   try {
-    // Actualizar la denuncia
+    // Primero verificar si la denuncia existe y obtener su información actual
+    const [denunciaActual] = await pool.query(
+      'SELECT fue_modificada, fecha, hora, estado FROM denuncia WHERE id_denuncia = ?',
+      [idDenuncia]
+    );
+
+    if (denunciaActual.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Denuncia no encontrada'
+      });
+    }
+
+    const denuncia = denunciaActual[0];
+
+    // Verificar si ya fue modificada
+    if (denuncia.fue_modificada === 1) {
+      return res.status(400).json({
+        success: false,
+        message: 'Esta denuncia ya fue modificada anteriormente'
+      });
+    }
+
+    // Verificar si aún está en estado pendiente
+    if (denuncia.estado !== 'PENDIENTE') {
+      return res.status(400).json({
+        success: false,
+        message: 'Solo se pueden modificar denuncias pendientes'
+      });
+    }
+
+    // Verificar si aún está dentro del tiempo límite (10 minutos)
+    const fechaRegistro = new Date(`${denuncia.fecha}T${denuncia.hora}`);
+    const now = new Date();
+    const diffMinutes = (now.getTime() - fechaRegistro.getTime()) / (1000 * 60);
+
+    if (diffMinutes > 10) {
+      return res.status(400).json({
+        success: false,
+        message: 'El tiempo para modificar esta denuncia ha expirado'
+      });
+    }
+
+    // Actualizar la denuncia y marcar como modificada
     await pool.query(
       `UPDATE denuncia 
        SET descripcion = ?, modulo_epi = ?, hora = ?, fecha = ?, 
-           tipo = ?, calle_avenida = ?, evidencia = ?
+           tipo = ?, calle_avenida = ?, evidencia = ?, fue_modificada = 1
        WHERE id_denuncia = ?`,
       [descripcion, modulo_epi, hora, fecha, tipo, calle_avenida, evidencia || null, idDenuncia]
     );
