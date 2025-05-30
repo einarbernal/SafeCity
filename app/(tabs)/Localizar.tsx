@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import React, { useRef, useState } from 'react';
-import { Dimensions, FlatList, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Dimensions, FlatList, Modal, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import MapView, { Callout, Marker, Polygon } from 'react-native-maps';
 import HamburgerMenu from '../auth/MenuHamburguesa';
 
@@ -17,22 +17,20 @@ interface PoliceStation {
 }
 
 const policeStations: PoliceStation[] = [
- {
+  {
     id: 1,
     latitude: -17.38977,
     longitude: -66.20358,
     name: 'EPI Nro 1: COÑA COÑA',
     jurisdictionColor: '#FF5733',
     jurisdictionArea: [
-      { latitude: -17.370, longitude: -66.215 }, // Noroeste (conexión con Norte)
-      { latitude: -17.372, longitude: -66.210 }, // Punto de ajuste con Norte
-      { latitude: -17.375, longitude: -66.205 }, // Punto compartido con Central
-      { latitude: -17.380, longitude: -66.200 }, // Punto compartido con Central
-      { latitude: -17.385, longitude: -66.195 }, // Borde sur
-      { latitude: -17.400, longitude: -66.200 }, // Sureste
-      { latitude: -17.410, longitude: -66.205 }, // Este
-      { latitude: -17.405, longitude: -66.215 }, // Noreste
-      { latitude: -17.390, longitude: -66.215 }  // Cierre
+      { latitude: -17.370, longitude: -66.220 }, // Noroeste
+      { latitude: -17.370, longitude: -66.180 }, // Noreste - límite con Norte y Central
+      { latitude: -17.390, longitude: -66.180 }, // Este - límite con Central
+      { latitude: -17.410, longitude: -66.190 }, // Sureste
+      { latitude: -17.410, longitude: -66.220 }, // Suroeste
+      { latitude: -17.395, longitude: -66.225 }, // Oeste
+      { latitude: -17.380, longitude: -66.225 }  // Cierre noroeste
     ],
   },
   {
@@ -42,15 +40,14 @@ const policeStations: PoliceStation[] = [
     name: 'EPI Nro 2: NORTE',
     jurisdictionColor: '#33FF57',
     jurisdictionArea: [
-      { latitude: -17.340, longitude: -66.185 }, // Noroeste
-      { latitude: -17.345, longitude: -66.175 }, // Entrante
-      { latitude: -17.340, longitude: -66.165 }, // Oeste
-      { latitude: -17.350, longitude: -66.155 }, // Punto de unión con EPI 6
-      { latitude: -17.365, longitude: -66.150 }, // Sur
-      { latitude: -17.375, longitude: -66.155 }, // Punto de unión con EPI 6
-      { latitude: -17.370, longitude: -66.165 }, // Este central
-      { latitude: -17.360, longitude: -66.175 }, // Protuberancia noreste
-      { latitude: -17.350, longitude: -66.180 }  // Norte
+      { latitude: -17.340, longitude: -66.190 }, // Noroeste - límite con Coña Coña
+      { latitude: -17.340, longitude: -66.155 }, // Noreste
+      { latitude: -17.360, longitude: -66.145 }, // Este - límite con Central
+      { latitude: -17.375, longitude: -66.155 }, // Sureste - límite con Central
+      { latitude: -17.375, longitude: -66.170 }, // Sur - límite con Central
+      { latitude: -17.370, longitude: -66.180 }, // Suroeste - límite con Central
+      { latitude: -17.365, longitude: -66.185 }, // Oeste
+      { latitude: -17.350, longitude: -66.190 }  // Noroeste
     ],
   },
   {
@@ -60,15 +57,13 @@ const policeStations: PoliceStation[] = [
     name: 'EPI Nro 3: JAIHUAYCO',
     jurisdictionColor: '#3388FF',
     jurisdictionArea: [
-      { latitude: -17.415, longitude: -66.175 }, // Punto de unión con EPI 1
-      { latitude: -17.420, longitude: -66.165 }, // Protuberancia oeste
-      { latitude: -17.410, longitude: -66.160 }, // Entrante central
-      { latitude: -17.415, longitude: -66.150 }, // Punto de unión con EPI 6
-      { latitude: -17.430, longitude: -66.145 }, // Sur
-      { latitude: -17.445, longitude: -66.150 }, // Sureste
-      { latitude: -17.450, longitude: -66.160 }, // Este
-      { latitude: -17.440, longitude: -66.170 }, // Punto de unión con EPI 4
-      { latitude: -17.425, longitude: -66.175 }  // Noreste
+      { latitude: -17.410, longitude: -66.180 }, // Noroeste - límite con Central
+      { latitude: -17.410, longitude: -66.145 }, // Noreste - límite con Alalay
+      { latitude: -17.430, longitude: -66.135 }, // Este - límite con Alalay
+      { latitude: -17.445, longitude: -66.145 }, // Sureste - límite con Sur
+      { latitude: -17.445, longitude: -66.175 }, // Suroeste
+      { latitude: -17.430, longitude: -66.185 }, // Oeste
+      { latitude: -17.420, longitude: -66.185 }  // Noroeste
     ],
   },
   {
@@ -78,15 +73,13 @@ const policeStations: PoliceStation[] = [
     name: 'EPI Nro 4: SUR',
     jurisdictionColor: '#FF33F5',
     jurisdictionArea: [
-      { latitude: -17.440, longitude: -66.170 }, // Punto de unión con EPI 3
-      { latitude: -17.445, longitude: -66.165 }, // Protuberancia noroeste
-      { latitude: -17.435, longitude: -66.160 }, // Entrante oeste
-      { latitude: -17.440, longitude: -66.150 }, // Punto de unión con EPI 5
-      { latitude: -17.455, longitude: -66.145 }, // Sur central
-      { latitude: -17.465, longitude: -66.155 }, // Sureste
-      { latitude: -17.460, longitude: -66.170 }, // Este
-      { latitude: -17.450, longitude: -66.175 }, // Punto de unión con EPI 3
-      { latitude: -17.445, longitude: -66.170 }  // Norte
+      { latitude: -17.445, longitude: -66.175 }, // Noroeste - límite con Jaihuayco
+      { latitude: -17.445, longitude: -66.145 }, // Noreste - límite con Jaihuayco
+      { latitude: -17.460, longitude: -66.135 }, // Este - límite con Alalay
+      { latitude: -17.475, longitude: -66.145 }, // Sureste
+      { latitude: -17.475, longitude: -66.185 }, // Suroeste
+      { latitude: -17.465, longitude: -66.190 }, // Oeste
+      { latitude: -17.455, longitude: -66.185 }  // Noroeste
     ],
   },
   {
@@ -96,43 +89,44 @@ const policeStations: PoliceStation[] = [
     name: 'EPI Nro 5: ALALAY',
     jurisdictionColor: '#F5FF33',
     jurisdictionArea: [
-      { latitude: -17.410, longitude: -66.145 }, // Punto de unión con EPI 6
-      { latitude: -17.405, longitude: -66.140 }, // Protuberancia noroeste
-      { latitude: -17.395, longitude: -66.135 }, // Entrante oeste
-      { latitude: -17.390, longitude: -66.130 }, // Punto de unión con EPI 6
-      { latitude: -17.400, longitude: -66.125 }, // Sur central
-      { latitude: -17.415, longitude: -66.130 }, // Sureste
-      { latitude: -17.425, longitude: -66.135 }, // Este
-      { latitude: -17.430, longitude: -66.145 }, // Punto de unión con EPI 3 y 4
-      { latitude: -17.420, longitude: -66.150 }  // Norte
+      { latitude: -17.410, longitude: -66.130 }, // Noroeste - límite con Central
+      { latitude: -17.395, longitude: -66.120 }, // Norte - límite con Central
+      { latitude: -17.395, longitude: -66.110 }, // Noreste
+      { latitude: -17.415, longitude: -66.100 }, // Este
+      { latitude: -17.435, longitude: -66.110 }, // Sureste
+      { latitude: -17.450, longitude: -66.120 }, // Sur (extendido)
+      { latitude: -17.460, longitude: -66.135 }, // Sur - límite con Sur
+      { latitude: -17.445, longitude: -66.145 }, // Suroeste - límite con Jaihuayco
+      { latitude: -17.430, longitude: -66.135 }, // Oeste - límite con Jaihuayco
+      { latitude: -17.420, longitude: -66.140 }, // Oeste (extendido para llenar espacio)
+      { latitude: -17.415, longitude: -66.145 }, // Oeste (extendido para conectar con Central)
+      { latitude: -17.410, longitude: -66.145 }  // Noroeste (extendido para conectar con Central)
     ],
   },
   {
-  id: 6,
-  latitude: -17.40112,
-  longitude: -66.15737,
-  name: 'EPI Nro 6: CENTRAL',
-  jurisdictionColor: '#33FFF5',
-  jurisdictionArea: [
-    { latitude: -17.380, longitude: -66.170 },  // Noroeste extendido (conexión EPI 1)
-    { latitude: -17.375, longitude: -66.165 },  // Punto de ajuste oeste
-    { latitude: -17.370, longitude: -66.160 },  // Protuberancia ampliada
-    { latitude: -17.365, longitude: -66.155 },  // Oeste extendido
-    { latitude: -17.360, longitude: -66.150 },  // Suroeste más amplio
-    { latitude: -17.370, longitude: -66.145 },   // Punto de unión con EPI 2 (ajustado)
-    { latitude: -17.385, longitude: -66.140 },  // Sur extendido
-    { latitude: -17.400, longitude: -66.145 },   // Punto de unión con EPI 5
-    { latitude: -17.410, longitude: -66.150 },   // Este (mantenido)
-    { latitude: -17.405, longitude: -66.160 },   // Punto de unión con EPI 3
-    { latitude: -17.395, longitude: -66.165 }    // Noreste (ajustado)
-  ]
-}
+   id: 6,
+    latitude: -17.40112,
+    longitude: -66.15737,
+    name: 'EPI Nro 6: CENTRAL',
+    jurisdictionColor: '#33FFF5',
+    jurisdictionArea: [
+      { latitude: -17.375, longitude: -66.170 }, // Norte - límite con Norte
+      { latitude: -17.375, longitude: -66.130 }, // Noreste - límite con Norte
+      { latitude: -17.395, longitude: -66.120 }, // Este - límite con Alalay
+      { latitude: -17.410, longitude: -66.130 }, // Sureste - límite con Alalay
+      { latitude: -17.410, longitude: -66.145 }, // Sur - límite con Jaihuayco y Alalay
+      { latitude: -17.410, longitude: -66.180 }, // Suroeste - límite con Jaihuayco
+      { latitude: -17.390, longitude: -66.180 }, // Oeste - límite con Coña Coña
+      { latitude: -17.370, longitude: -66.180 }  // Noroeste - límite con Norte (cierre)
+    ]
+  }
 ];
 
 export default function MapScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedStation, setSelectedStation] = useState<PoliceStation | null>(null);
+  const [showDenunciaModal, setShowDenunciaModal] = useState(false);
   const [mapRegion, setMapRegion] = useState({
     latitude: -17.3924636,
     longitude: -66.1582445,
@@ -140,6 +134,7 @@ export default function MapScreen() {
     longitudeDelta: 0.15,
   });
   const searchInputRef = useRef<TextInput>(null);
+  const router = useRouter();
 
   const handleSearchChange = (text: string) => {
     setSearchQuery(text);
@@ -159,6 +154,16 @@ export default function MapScreen() {
       latitudeDelta: 0.02,
       longitudeDelta: 0.02,
     });
+  };
+
+  const handleStationPress = (station: PoliceStation) => {
+    setSelectedStation(station);
+    setShowDenunciaModal(true);
+  };
+
+  const handleRealizarDenuncia = () => {
+    setShowDenunciaModal(false);
+    router.push('/Reportar');
   };
 
   const handleSearchSubmit = () => {
@@ -245,7 +250,7 @@ export default function MapScreen() {
             strokeColor={station.jurisdictionColor}
             fillColor={`${station.jurisdictionColor}50`}
             strokeWidth={2}
-            onPress={() => handleStationSelect(station)} // <-- Interactividad en áreas
+            onPress={() => handleStationPress(station)} // <-- Interactividad en áreas
           />
           
           {/* Marcador con interactividad */}
@@ -255,7 +260,7 @@ export default function MapScreen() {
               longitude: station.longitude,
             }}
             pinColor={station.jurisdictionColor}
-            onPress={() => handleStationSelect(station)} // <-- Interactividad en marcadores
+            onPress={() => handleStationPress(station)} // <-- Interactividad en marcadores
           >
             <Callout tooltip={false}>
               <View style={[styles.callout, { borderColor: station.jurisdictionColor }]}>
@@ -268,6 +273,50 @@ export default function MapScreen() {
         </React.Fragment>
       ))}
     </MapView>
+
+      {/* Modal para realizar denuncia */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showDenunciaModal}
+        onRequestClose={() => setShowDenunciaModal(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Ionicons 
+                name="shield-checkmark" 
+                size={50} 
+                color={selectedStation?.jurisdictionColor || '#2e5929'} 
+              />
+            </View>
+            
+            <Text style={styles.modalTitle}>
+              {selectedStation?.name}
+            </Text>
+            
+            <Text style={styles.modalDescription}>
+              ¿Desea realizar una denuncia en esta estación policial?
+            </Text>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.modalButtonSecondary]}
+                onPress={() => setShowDenunciaModal(false)}
+              >
+                <Text style={styles.modalButtonTextSecondary}>Cancelar</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.modalButtonPrimary]}
+                onPress={handleRealizarDenuncia}
+              >
+                <Text style={styles.modalButtonTextPrimary}>Realizar Denuncia</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Leyenda de colores mejorada */}
     <View style={styles.legendContainer}>
@@ -413,4 +462,110 @@ const styles = StyleSheet.create({
     fontSize: 12,
     flex: 1,
   },
+
+  // Estilos del Modal
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    width: '85%',
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 25,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalHeader: {
+    marginBottom: 15,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 15,
+    color: '#2e5929',
+  },
+  modalDescription: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 25,
+    color: '#666',
+    lineHeight: 22,
+  },
+  modalButtons: {
+  flexDirection: 'row',
+  width: '100%',
+  justifyContent: 'space-between',
+  alignItems: 'stretch', // Asegura que ambos botones tengan la misma altura
+  gap: 10, // Espacio uniforme entre botones (alternativa a marginHorizontal)
+},
+
+modalButton: {
+  flex: 1,
+  paddingVertical: 14,
+  paddingHorizontal: 20,
+  borderRadius: 12,
+  alignItems: 'center',
+  justifyContent: 'center', // Centra el contenido verticalmente
+  minHeight: 48, // Altura mínima para consistencia
+  borderWidth: 1.5, // Grosor de borde consistente
+},
+
+modalButtonPrimary: {
+  backgroundColor: '#006400',
+  borderColor: '#2D5016',
+  shadowColor: '#E6C200',
+  shadowOffset: {
+    width: 0,
+    height: 2,
+  },
+  shadowOpacity: 0.1,
+  shadowRadius: 3,
+  elevation: 2, // Para Android
+},
+
+modalButtonSecondary: {
+  backgroundColor: '#FFFFFF',
+  borderColor: '#E0E0E0',
+  shadowColor: '#000000',
+  shadowOffset: {
+    width: 0,
+    height: 1,
+  },
+  shadowOpacity: 0.05,
+  shadowRadius: 2,
+  elevation: 1, // Para Android
+},
+
+modalButtonTextPrimary: {
+  color: '#FFFFFF',
+  fontSize: 16,
+  fontWeight: '600',
+  textAlign: 'center',
+  letterSpacing: 0.3,
+},
+
+modalButtonTextSecondary: {
+  color: '#4A4A4A',
+  fontSize: 16,
+  fontWeight: '500',
+  textAlign: 'center',
+  letterSpacing: 0.3,
+},
+
+// Estados de presión (opcional)
+modalButtonPressed: {
+  opacity: 0.8,
+  transform: [{ scale: 0.98 }],
+},
 });
