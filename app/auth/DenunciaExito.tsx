@@ -1,7 +1,7 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import React from 'react';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const DenunciaExito = () => {
   const router = useRouter();
@@ -16,7 +16,7 @@ const DenunciaExito = () => {
       
       <TouchableOpacity 
         style={styles.buttonR}
-        onPress={() => router.push('/(tabs)/explore')}
+        onPress={() => router.push('/(tabs)/Localizar')}
       >
         <FontAwesome/>
         <Text style={styles.buttonTextR}>Ver mis reportes</Text>

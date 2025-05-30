@@ -17,17 +17,22 @@ interface PoliceStation {
 }
 
 const policeStations: PoliceStation[] = [
-  {
+ {
     id: 1,
     latitude: -17.38977,
     longitude: -66.20358,
     name: 'EPI Nro 1: COÑA COÑA',
-    jurisdictionColor: '#FF5733', // Rojo/naranja
+    jurisdictionColor: '#FF5733',
     jurisdictionArea: [
-      { latitude: -17.380, longitude: -66.220 },
-      { latitude: -17.380, longitude: -66.190 },
-      { latitude: -17.410, longitude: -66.190 },
-      { latitude: -17.410, longitude: -66.220 },
+      { latitude: -17.370, longitude: -66.215 }, // Noroeste (conexión con Norte)
+      { latitude: -17.372, longitude: -66.210 }, // Punto de ajuste con Norte
+      { latitude: -17.375, longitude: -66.205 }, // Punto compartido con Central
+      { latitude: -17.380, longitude: -66.200 }, // Punto compartido con Central
+      { latitude: -17.385, longitude: -66.195 }, // Borde sur
+      { latitude: -17.400, longitude: -66.200 }, // Sureste
+      { latitude: -17.410, longitude: -66.205 }, // Este
+      { latitude: -17.405, longitude: -66.215 }, // Noreste
+      { latitude: -17.390, longitude: -66.215 }  // Cierre
     ],
   },
   {
@@ -35,12 +40,17 @@ const policeStations: PoliceStation[] = [
     latitude: -17.36201,
     longitude: -66.17274,
     name: 'EPI Nro 2: NORTE',
-    jurisdictionColor: '#33FF57', // Verde
+    jurisdictionColor: '#33FF57',
     jurisdictionArea: [
-      { latitude: -17.350, longitude: -66.180 },
-      { latitude: -17.350, longitude: -66.160 },
-      { latitude: -17.380, longitude: -66.160 },
-      { latitude: -17.380, longitude: -66.180 },
+      { latitude: -17.340, longitude: -66.185 }, // Noroeste
+      { latitude: -17.345, longitude: -66.175 }, // Entrante
+      { latitude: -17.340, longitude: -66.165 }, // Oeste
+      { latitude: -17.350, longitude: -66.155 }, // Punto de unión con EPI 6
+      { latitude: -17.365, longitude: -66.150 }, // Sur
+      { latitude: -17.375, longitude: -66.155 }, // Punto de unión con EPI 6
+      { latitude: -17.370, longitude: -66.165 }, // Este central
+      { latitude: -17.360, longitude: -66.175 }, // Protuberancia noreste
+      { latitude: -17.350, longitude: -66.180 }  // Norte
     ],
   },
   {
@@ -48,12 +58,17 @@ const policeStations: PoliceStation[] = [
     latitude: -17.42703,
     longitude: -66.16177,
     name: 'EPI Nro 3: JAIHUAYCO',
-    jurisdictionColor: '#3388FF', // Azul
+    jurisdictionColor: '#3388FF',
     jurisdictionArea: [
-      { latitude: -17.420, longitude: -66.170 },
-      { latitude: -17.420, longitude: -66.150 },
-      { latitude: -17.440, longitude: -66.150 },
-      { latitude: -17.440, longitude: -66.170 },
+      { latitude: -17.415, longitude: -66.175 }, // Punto de unión con EPI 1
+      { latitude: -17.420, longitude: -66.165 }, // Protuberancia oeste
+      { latitude: -17.410, longitude: -66.160 }, // Entrante central
+      { latitude: -17.415, longitude: -66.150 }, // Punto de unión con EPI 6
+      { latitude: -17.430, longitude: -66.145 }, // Sur
+      { latitude: -17.445, longitude: -66.150 }, // Sureste
+      { latitude: -17.450, longitude: -66.160 }, // Este
+      { latitude: -17.440, longitude: -66.170 }, // Punto de unión con EPI 4
+      { latitude: -17.425, longitude: -66.175 }  // Noreste
     ],
   },
   {
@@ -61,12 +76,17 @@ const policeStations: PoliceStation[] = [
     latitude: -17.44445,
     longitude: -66.16550,
     name: 'EPI Nro 4: SUR',
-    jurisdictionColor: '#FF33F5', // Rosa
+    jurisdictionColor: '#FF33F5',
     jurisdictionArea: [
-      { latitude: -17.435, longitude: -66.175 },
-      { latitude: -17.435, longitude: -66.155 },
-      { latitude: -17.455, longitude: -66.155 },
-      { latitude: -17.455, longitude: -66.175 },
+      { latitude: -17.440, longitude: -66.170 }, // Punto de unión con EPI 3
+      { latitude: -17.445, longitude: -66.165 }, // Protuberancia noroeste
+      { latitude: -17.435, longitude: -66.160 }, // Entrante oeste
+      { latitude: -17.440, longitude: -66.150 }, // Punto de unión con EPI 5
+      { latitude: -17.455, longitude: -66.145 }, // Sur central
+      { latitude: -17.465, longitude: -66.155 }, // Sureste
+      { latitude: -17.460, longitude: -66.170 }, // Este
+      { latitude: -17.450, longitude: -66.175 }, // Punto de unión con EPI 3
+      { latitude: -17.445, longitude: -66.170 }  // Norte
     ],
   },
   {
@@ -74,31 +94,39 @@ const policeStations: PoliceStation[] = [
     latitude: -17.41840,
     longitude: -66.13651,
     name: 'EPI Nro 5: ALALAY',
-    jurisdictionColor: '#F5FF33', // Amarillo
+    jurisdictionColor: '#F5FF33',
     jurisdictionArea: [
-       { latitude: -17.415, longitude: -66.142 },  // Punto noroeste (extendido)
-    { latitude: -17.412, longitude: -66.138 },  // Protuberancia hacia el norte
-    { latitude: -17.410, longitude: -66.133 },  // Punto norte irregular
-    { latitude: -17.413, longitude: -66.128 },  // Valle este
-    { latitude: -17.422, longitude: -66.126 },  // Punto sureste (extendido)
-    { latitude: -17.428, longitude: -66.131 },  // Curva sur
-    { latitude: -17.425, longitude: -66.140 },  // Punto suroeste irregular
-    { latitude: -17.420, longitude: -66.143 }
+      { latitude: -17.410, longitude: -66.145 }, // Punto de unión con EPI 6
+      { latitude: -17.405, longitude: -66.140 }, // Protuberancia noroeste
+      { latitude: -17.395, longitude: -66.135 }, // Entrante oeste
+      { latitude: -17.390, longitude: -66.130 }, // Punto de unión con EPI 6
+      { latitude: -17.400, longitude: -66.125 }, // Sur central
+      { latitude: -17.415, longitude: -66.130 }, // Sureste
+      { latitude: -17.425, longitude: -66.135 }, // Este
+      { latitude: -17.430, longitude: -66.145 }, // Punto de unión con EPI 3 y 4
+      { latitude: -17.420, longitude: -66.150 }  // Norte
     ],
   },
   {
-    id: 6,
-    latitude: -17.40112,
-    longitude: -66.15737,
-    name: 'EPI Nro 6: CENTRAL',
-    jurisdictionColor: '#33FFF5', // Turquesa
-    jurisdictionArea: [
-      { latitude: -17.390, longitude: -66.165 },
-      { latitude: -17.390, longitude: -66.145 },
-      { latitude: -17.410, longitude: -66.145 },
-      { latitude: -17.410, longitude: -66.165 },
-    ],
-  },
+  id: 6,
+  latitude: -17.40112,
+  longitude: -66.15737,
+  name: 'EPI Nro 6: CENTRAL',
+  jurisdictionColor: '#33FFF5',
+  jurisdictionArea: [
+    { latitude: -17.380, longitude: -66.170 },  // Noroeste extendido (conexión EPI 1)
+    { latitude: -17.375, longitude: -66.165 },  // Punto de ajuste oeste
+    { latitude: -17.370, longitude: -66.160 },  // Protuberancia ampliada
+    { latitude: -17.365, longitude: -66.155 },  // Oeste extendido
+    { latitude: -17.360, longitude: -66.150 },  // Suroeste más amplio
+    { latitude: -17.370, longitude: -66.145 },   // Punto de unión con EPI 2 (ajustado)
+    { latitude: -17.385, longitude: -66.140 },  // Sur extendido
+    { latitude: -17.400, longitude: -66.145 },   // Punto de unión con EPI 5
+    { latitude: -17.410, longitude: -66.150 },   // Este (mantenido)
+    { latitude: -17.405, longitude: -66.160 },   // Punto de unión con EPI 3
+    { latitude: -17.395, longitude: -66.165 }    // Noreste (ajustado)
+  ]
+}
 ];
 
 export default function MapScreen() {
