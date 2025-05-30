@@ -23,6 +23,7 @@ const NoticiaScreen = () => {
   const [horaPublicacion, setHoraPublicacion] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [imageUrl, setImageUrl] = useState('');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [idUsuario, setIdUsuario] = useState<number | null>(null);
@@ -39,42 +40,65 @@ const NoticiaScreen = () => {
   const SERVER_IP = '192.168.1.66';
   const API_URL = `http://${SERVER_IP}:3000/noticias`;
 
-  // Obtener ID del usuario al cargar el componente
   useEffect(() => {
-  const loadUserData = async () => {
+    const loadUserData = async () => {
+      try {
+        const userDataString = await AsyncStorage.getItem('userData');
+        if (userDataString) {
+          const userData = JSON.parse(userDataString);
+          const id = userData.id_policia || null;
+          if (id) setIdUsuario(id);
+        }
+      } catch (error) {
+        console.error('Error al cargar datos del usuario:', error);
+      }
+    };
+
+    loadUserData();
+  }, []);
+
+  const pickImageAndUpload = async () => {
+    setLoading(true);
     try {
-      const userDataString = await AsyncStorage.getItem('userData');
-      if (userDataString) {
-        const userData = JSON.parse(userDataString);
-        // Cambié aquí para buscar id_policia
-        const id = userData.id_policia || null;
-        if (id) setIdUsuario(id);
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permiso requerido', 'Necesitamos acceso a tu galería para seleccionar imágenes');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.7,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const base64Image = `data:image/jpeg;base64,${result.assets[0].base64}`;
+        setSelectedImage(base64Image);
+        
+        // Subir a Cloudinary
+        const formData = new FormData();
+        formData.append('file', base64Image);
+        formData.append('upload_preset', 'Imagenes_Evidencia');
+        
+        const uploadResponse = await fetch('https://api.cloudinary.com/v1_1/dcrrqn3rr/image/upload', {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+        
+        const uploadedImage = await uploadResponse.json();
+        setImageUrl(uploadedImage.secure_url);
       }
     } catch (error) {
-      console.error('Error al cargar datos del usuario:', error);
-    }
-  };
-
-  loadUserData();
-}, []);
-
-
-  const pickImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permiso requerido', 'Necesitamos acceso a tu galería para seleccionar imágenes');
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
-
-    if (!result.canceled && result.assets && result.assets.length > 0) {
-      setSelectedImage(result.assets[0].uri);
+      console.error('Error al subir la imagen:', error);
+      showErrorModal('Error al subir la imagen');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -97,35 +121,33 @@ const NoticiaScreen = () => {
   };
 
   const formatDate = (date: Date) => {
-    return date.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+    return date.toISOString().split('T')[0];
   };
 
   const handleSubmit = async () => {
-  if (!idUsuario) {
-    showErrorModal('No se encontró el usuario policía. Por favor inicia sesión de nuevo.');
-    return;
-  }
-  if (!titulo) {
-    showErrorModal('El título de la noticia es obligatorio');
-    return;
-  }
-  if (!descripcion) {
-    showErrorModal('La descripción de la noticia es obligatoria');
-    return;
-  }
-  
-  
-    
+    if (!idUsuario) {
+      showErrorModal('No se encontró el usuario policía. Por favor inicia sesión de nuevo.');
+      return;
+    }
+    if (!titulo) {
+      showErrorModal('El título de la noticia es obligatorio');
+      return;
+    }
+    if (!descripcion) {
+      showErrorModal('La descripción de la noticia es obligatoria');
+      return;
+    }
+
     setLoading(true);
 
     const noticiaData = {
-      titulo,
-      descripcion,
-      fecha: formatDate(fechaPublicacion),
-      hora: formatTime(horaPublicacion),
-      imagen: selectedImage || '',
-      idPolicia: idUsuario, // Aquí agregamos el id del usuario (policía)
-    };
+  titulo,
+  descripcion,
+  fecha: formatDate(fechaPublicacion),
+  hora: formatTime(horaPublicacion),
+  imagen: imageUrl || '', // Solo la URL (vacío si no hay imagen)
+  idPolicia: idUsuario,
+};
 
     try {
       const response = await fetch(API_URL, {
@@ -136,10 +158,22 @@ const NoticiaScreen = () => {
         body: JSON.stringify(noticiaData),
       });
 
-      const data = await response.json();
+      let data;
+      try {
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          data = await response.json();
+        } else {
+          throw new Error('Respuesta no válida del servidor');
+        }
+      } catch (parseError) {
+        showErrorModal('Error al procesar la respuesta del servidor.');
+        console.error('Parse error:', parseError);
+        return;
+      }
 
       if (data.success) {
-        router.push('/(policia)/NoticiaExito');
+        router.push('/(policia)/(modals)/NoticiaExito');
       } else {
         showErrorModal(data.message || 'Error al registrar noticia');
       }
@@ -244,10 +278,17 @@ const NoticiaScreen = () => {
           )}
           <TouchableOpacity 
             style={styles.uploadButton} 
-            onPress={pickImage}
+            onPress={pickImageAndUpload}
+            disabled={loading}
           >
-            <FontAwesome name="cloud-upload" size={24} color="black" />
-            <Text style={styles.uploadButtonText}>Subir Imagen</Text>
+            {loading ? (
+              <ActivityIndicator color="#000" />
+            ) : (
+              <>
+                <FontAwesome name="cloud-upload" size={24} color="black" />
+                <Text style={styles.uploadButtonText}>Subir Imagen</Text>
+              </>
+            )}
           </TouchableOpacity>
         </View>
 
@@ -286,7 +327,7 @@ const NoticiaScreen = () => {
   );
 };
 
-// Los estilos se mantienen iguales
+// Los estilos permanecen iguales
 const styles = StyleSheet.create({
   menuSuperior: {
     flex: 1,

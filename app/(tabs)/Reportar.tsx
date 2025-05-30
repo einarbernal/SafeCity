@@ -17,6 +17,7 @@ const DenunciaScreen = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [idCiudadano, setIdCiudadano] = useState<number | null>(null);
+  const [imageUrl, setImageUrl] = useState('');
   const router = useRouter();
 
   // Estados para manejar los pickers en iOS
@@ -32,7 +33,7 @@ const DenunciaScreen = () => {
   };
 
 
-  const SERVER_IP = '192.168.31.104';
+  const SERVER_IP = '192.168.1.66';
   const API_URL = `http://${SERVER_IP}:3000/denuncias`;
 
   useEffect(() => {
@@ -69,21 +70,74 @@ const DenunciaScreen = () => {
   ];
 
   const pickImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permiso requerido', 'Necesitamos acceso a tu galería para seleccionar imágenes');
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
-
-    if (!result.canceled && result.assets && result.assets.length > 0) {
-      setSelectedImage(result.assets[0].uri);
+    setLoading(true);
+    try {
+      // Solicitar permisos
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permiso requerido', 'Necesitamos acceso a tu galería para seleccionar imágenes');
+        return;
+      }
+  
+      // Seleccionar imagen (con API actualizada)
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images, // API actualizada
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.7,
+      });
+  
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        setSelectedImage(asset.uri);
+        
+        // Crear FormData correctamente
+        const formData = new FormData();
+        formData.append('file', {
+          uri: asset.uri,
+          type: asset.mimeType || 'image/jpeg', // Usar mimeType si está disponible
+          name: asset.fileName || `photo_${Date.now()}.jpg`
+        } as any);
+        formData.append('upload_preset', 'Imagenes_Evidencia');
+        
+        // Subir a Cloudinary con timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 segundos timeout
+  
+        const uploadResponse = await fetch('https://api.cloudinary.com/v1_1/dcrrqn3rr/image/upload', {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+          signal: controller.signal,
+        });
+        
+        clearTimeout(timeoutId);
+  
+        if (!uploadResponse.ok) {
+          throw new Error(`HTTP error! status: ${uploadResponse.status}`);
+        }
+  
+        const uploadedImage = await uploadResponse.json();
+        setImageUrl(uploadedImage.secure_url);
+        //Alert.alert('Éxito', 'Imagen subida correctamente a Cloudinary');
+      }
+    } catch (error) {
+      console.error('Error detallado al subir la imagen:', error);
+      let errorMessage = 'Error al subir la imagen. Por favor, inténtelo nuevamente.';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('Network request failed')) {
+          errorMessage = 'Error de conexión. Verifique su conexión a internet.';
+        } else if (error.name === 'AbortError') {
+          errorMessage = 'Tiempo de espera agotado. La imagen es muy grande o la conexión es lenta.';
+        }
+      }
+      
+      showErrorModal(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -123,21 +177,21 @@ const DenunciaScreen = () => {
       showErrorModal('No se pudo identificar al usuario. Por favor, inicie sesión nuevamente.');
       return;
     }
-
+  
     setLoading(true);
-
+  
     const denunciaData = {
       descripcion,
       modulo_epi: moduloPolicial,
-      hora: formatTime(horaIncidente),
-      fecha: formatDate(new Date()),
+      hora: `${horaIncidente.getHours().toString().padStart(2, '0')}:${horaIncidente.getMinutes().toString().padStart(2, '0')}`,
+      fecha: formatDate(horaIncidente),
       tipo: tipoIncidente,
       calle_avenida: calleAvenida,
-      evidencia: selectedImage || '',
+      evidencia: imageUrl || null, // Usamos la URL de Cloudinary
       estado: 'PENDIENTE',
       id_ciudadano: idCiudadano
     };
-
+  
     try {
       const response = await fetch(API_URL, {
         method: 'POST',
@@ -146,9 +200,9 @@ const DenunciaScreen = () => {
         },
         body: JSON.stringify(denunciaData),
       });
-
+  
       const data = await response.json();
-
+  
       if (data.success) {
         router.push('/auth/DenunciaExito');
       } else {
@@ -546,6 +600,7 @@ const styles = StyleSheet.create({
   picker: {
     width: '100%',
     height: '100%',
+    marginLeft:-15,
   },
   pickerItem: {
     fontSize: 20,

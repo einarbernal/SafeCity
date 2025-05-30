@@ -1,6 +1,7 @@
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { FontAwesome } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -8,7 +9,7 @@ import {
   RefreshControl,
   ScrollView,
   StyleSheet,
-  TouchableOpacity,
+  TouchableOpacity
 } from 'react-native';
 
 interface Denuncia {
@@ -19,6 +20,8 @@ interface Denuncia {
   tipo: string;
   calle_avenida: string;
   estado: string;
+  evidencia: string;
+  modulo_epi: string;
   nombre_denunciante?: string;
 }
 
@@ -26,6 +29,7 @@ export default function ReportesScreen() {
   const SERVER_IP = '192.168.1.66';
   const API_URL = `http://${SERVER_IP}:3000`;
 
+  const router = useRouter();
   const [denunciasAtendidas, setDenunciasAtendidas] = useState<Denuncia[]>([]);
   const [casosPendientes, setCasosPendientes] = useState<Denuncia[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,40 +40,40 @@ export default function ReportesScreen() {
       const resPendientes = await fetch(`${API_URL}/casosPendientes`);
       if (!resPendientes.ok) throw new Error('Error al obtener pendientes');
       const dataPendientes = await resPendientes.json();
-      setCasosPendientes(dataPendientes);
+      
+      const pendientesConNombres = await Promise.all(
+        dataPendientes.map(async (caso: Denuncia) => {
+          const resDenunciante = await fetch(`${API_URL}/obtenerDenunciante/${caso.id_denuncia}`);
+          if (resDenunciante.ok) {
+            const { nombre } = await resDenunciante.json();
+            return { ...caso, nombre_denunciante: nombre };
+          }
+          return caso;
+        })
+      );
+      setCasosPendientes(pendientesConNombres);
 
       const resAtendidas = await fetch(`${API_URL}/denunciasAtendidas`);
       if (!resAtendidas.ok) throw new Error('Error al obtener atendidas');
       const dataAtendidas = await resAtendidas.json();
-      setDenunciasAtendidas(dataAtendidas);
+      
+      const atendidasConNombres = await Promise.all(
+        dataAtendidas.map(async (denuncia: Denuncia) => {
+          const resDenunciante = await fetch(`${API_URL}/obtenerDenunciante/${denuncia.id_denuncia}`);
+          if (resDenunciante.ok) {
+            const { nombre } = await resDenunciante.json();
+            return { ...denuncia, nombre_denunciante: nombre };
+          }
+          return denuncia;
+        })
+      );
+      setDenunciasAtendidas(atendidasConNombres);
     } catch (error) {
       Alert.alert('Error', error instanceof Error ? error.message : 'Error desconocido');
       console.error(error);
     } finally {
       setLoading(false);
       setRefreshing(false);
-    }
-  };
-
-  const handleAtenderCaso = async (idDenuncia: number) => {
-    try {
-      const response = await fetch(`${API_URL}/atenderDenuncia`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ idDenuncia }),
-      });
-
-      if (!response.ok) throw new Error('Error al actualizar el caso');
-
-      const nuevaDenunciaAtendida = await response.json();
-      setDenunciasAtendidas(prev => [...prev, nuevaDenunciaAtendida]);
-      setCasosPendientes(prev => prev.filter(caso => caso.id_denuncia !== idDenuncia));
-      Alert.alert('Éxito', 'Caso marcado como atendido');
-    } catch (error) {
-      Alert.alert('Error', 'No se pudo actualizar el caso');
-      console.error(error);
     }
   };
 
@@ -89,7 +93,8 @@ export default function ReportesScreen() {
       </ThemedView>
     );
   }
- return (
+
+  return (
     <ThemedView style={styles.container}>
       <ScrollView
         contentContainerStyle={styles.scrollContainer}
@@ -97,10 +102,6 @@ export default function ReportesScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#2e5929']} />
         }
       >
-        <ThemedText type="title" style={styles.header}>
-          Reportes
-        </ThemedText>
-
         <ThemedText type="subtitle" style={styles.sectionTitle}>
           Denuncias
         </ThemedText>
@@ -126,6 +127,28 @@ export default function ReportesScreen() {
                 Denunciante: {denuncia.nombre_denunciante}
               </ThemedText>
             )}
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => router.push({
+                pathname: '/(policia)/(modals)/DescripcionRAtendidos',
+                params: {
+                  id_denuncia: denuncia.id_denuncia.toString(),
+                  descripcion: denuncia.descripcion,
+                  hora: denuncia.hora,
+                  fecha: denuncia.fecha,
+                  tipo: denuncia.tipo,
+                  calle_avenida: denuncia.calle_avenida,
+                  estado: denuncia.estado,
+                  evidencia: denuncia.evidencia || '',
+                  modulo_epi: denuncia.modulo_epi || '',
+                  nombre_denunciante: denuncia.nombre_denunciante || ''
+                },
+              })}
+            >
+              <FontAwesome name="check" size={14} color="#fff" />
+              <ThemedText style={styles.actionButtonText}>Descripcion</ThemedText>
+            </TouchableOpacity>
+            
           </ThemedView>
         ))}
 
@@ -141,21 +164,32 @@ export default function ReportesScreen() {
                 {caso.tipo.toUpperCase()} - {caso.calle_avenida}
               </ThemedText>
             </ThemedView>
-
             <ThemedText style={styles.cardText}>{caso.descripcion}</ThemedText>
             <ThemedText style={styles.cardDateTime}>
               {formatDate(caso.fecha)} a las {formatTime(caso.hora)}
             </ThemedText>
-
             {caso.nombre_denunciante && (
               <ThemedText style={styles.cardText}>
                 Denunciante: {caso.nombre_denunciante}
               </ThemedText>
             )}
-
             <TouchableOpacity
               style={styles.actionButton}
-              onPress={() => handleAtenderCaso(caso.id_denuncia)}
+              onPress={() => router.push({
+                pathname: '/(policia)/(modals)/DescripcionReportes',
+                params: {
+                  id_denuncia: caso.id_denuncia.toString(),
+                  descripcion: caso.descripcion,
+                  hora: caso.hora,
+                  fecha: caso.fecha,
+                  tipo: caso.tipo,
+                  calle_avenida: caso.calle_avenida,
+                  estado: caso.estado,
+                  evidencia: caso.evidencia || '',
+                  modulo_epi: caso.modulo_epi || '',
+                  nombre_denunciante: caso.nombre_denunciante || ''
+                },
+              })}
             >
               <FontAwesome name="check" size={14} color="#fff" />
               <ThemedText style={styles.actionButtonText}>Atender Caso</ThemedText>
@@ -198,18 +232,11 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
     backgroundColor: '#f8f9fa',
   },
-  header: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 16,
-    color: '#2e5929',
-  },
   sectionTitle: {
     fontSize: 20,
     marginBottom: 16,
     color: '#333',
     fontWeight: '600',
-    // Eliminamos cualquier borde que pudiera estar aquí
   },
   subsectionTitle: {
     fontSize: 18,
@@ -217,19 +244,18 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     color: '#444',
     fontWeight: '600',
-    // Aseguramos que no tenga bordes
   },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8,
-      backgroundColor: 'transparent',
+    backgroundColor: 'transparent',
   },
   cardTitle: {
     marginLeft: 8,
     fontSize: 16,
     color: '#333',
-      backgroundColor: 'transparent',
+    backgroundColor: 'transparent',
   },
   cardText: {
     marginLeft: 24,

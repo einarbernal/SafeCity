@@ -65,7 +65,7 @@ const LoginScreen = () => {
     } else if (data.usuario.id_policia) {
       // Redirigir al área policial
       router.replace({
-        pathname: '/(policia)/RegistroNoticia',
+        pathname: '/(policia)/(tab)/reportes',
         params: {
           idPolicia: data.usuario.id_policia,
           nombres: data.usuario.nombres,

@@ -8,7 +8,8 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(express.json());
+app.use(express.json({ limit: '2mb' }));
+app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 app.use(cors());
 
 // Configuración de la base de datos
@@ -159,20 +160,40 @@ app.post('/denuncias', async (req, res) => {
 });
 
 
-// Ruta para crear Noticias
 app.post('/noticias', async (req, res) => {
   const { titulo, descripcion, hora, fecha, imagen, idPolicia } = req.body;
 
+  // Debug
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Body recibido:', req.body);
+  }
+
   // Validaciones básicas
-  if (!titulo || !descripcion || !hora || !fecha || !imagen || !idPolicia) {
+  if (!titulo || !descripcion || !hora || !fecha || !idPolicia) {
     return res.status(400).json({ 
       success: false,
       message: 'Todos los campos obligatorios son requeridos' 
     });
   }
 
+  // Validar que idPolicia sea un número
+  if (isNaN(idPolicia)) {
+    return res.status(400).json({
+      success: false,
+      message: 'ID de policía no válido'
+    });
+  }
+
+  // Validación de URL de Cloudinary (solo si hay imagen)
+  if (imagen && !imagen.startsWith('https://res.cloudinary.com/')) {
+    return res.status(400).json({
+      success: false,
+      message: 'Formato de imagen no válido. Debe ser una URL de Cloudinary'
+    });
+  }
+
   try {
-    // Verificar que el policía existe
+    // Verificar si el policía existe
     const [policia] = await pool.query(
       'SELECT id_policia FROM policia WHERE id_policia = ?',
       [idPolicia]
@@ -185,35 +206,29 @@ app.post('/noticias', async (req, res) => {
       });
     }
 
-    // Insertar la noticia directamente sin transacción
+    // Insertar la noticia
     const [noticiaResult] = await pool.query(
       `INSERT INTO noticia 
-      (titulo, descripcion, hora, fecha, imagen, id_policia) 
-      VALUES (?, ?, ?, ?, ?, ?)`,
-      [titulo, descripcion, hora, fecha, imagen, idPolicia]
+       (titulo, descripcion, hora, fecha, imagen, id_policia) 
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [titulo, descripcion, hora, fecha, imagen || null, idPolicia]
     );
-
-    const noticiaId = noticiaResult.insertId;
 
     res.json({ 
       success: true,
       message: 'Noticia registrada exitosamente',
-      noticiaId
+      noticiaId: noticiaResult.insertId
     });
 
   } catch (error) {
     console.error('Error al registrar noticia:', error);
-    
     res.status(500).json({ 
       success: false,
       message: 'Error al registrar la noticia en la base de datos',
-      error: error.message // Opcional: incluir el mensaje de error para debugging
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
-
-
-
 
 // Ruta para registro de ciudadanos
 app.post('/registro', async (req, res) => {
@@ -266,20 +281,23 @@ app.post('/registro', async (req, res) => {
 app.get('/casosPendientes', async (req, res) => {
   try {
     const [casos] = await pool.query(`
-      SELECT *
-      FROM denuncia
-      WHERE estado = 'pendiente'
+      SELECT 
+        d.*,
+        CONCAT(c.nombres, ' ', c.apellido_paterno, ' ', c.apellido_materno) AS nombre_denunciante
+      FROM denuncia d
+      JOIN ciudadano c ON d.id_ciudadano = c.id_ciudadano
+      WHERE d.estado = 'pendiente'
       ORDER BY
-        CASE tipo
+        CASE d.tipo
           WHEN 'ASESINATO'            THEN 1
           WHEN 'asalto'               THEN 2
           WHEN 'accidente de transito' THEN 3
-          ELSE 4                      -- otros tipos al final
+          ELSE 4
         END,
-        fecha DESC, hora DESC         -- opcional: desempata por fecha/hora
+        d.fecha DESC, d.hora DESC
     `);
 
-    res.json(casos);  // devuelve el array ya ordenado
+    res.json(casos);
   } catch (error) {
     console.error('Error al obtener casos pendientes:', error);
     res.status(500).json({
@@ -319,10 +337,13 @@ app.post('/atenderDenuncia', async (req, res) => {
 app.get('/denunciasAtendidas', async (req, res) => {
   try {
     const [denuncias] = await pool.query(`
-      SELECT *
-      FROM denuncia
-      WHERE estado = 'ATENDIDO'
-      ORDER BY fecha DESC, hora DESC
+      SELECT 
+        d.*,
+        CONCAT(c.nombres, ' ', c.apellido_paterno, ' ', c.apellido_materno) AS nombre_denunciante
+      FROM denuncia d
+      JOIN ciudadano c ON d.id_ciudadano = c.id_ciudadano
+      WHERE d.estado = 'ATENDIDO'
+      ORDER BY d.fecha DESC, d.hora DESC
     `);
 
     res.json(denuncias);
@@ -383,7 +404,189 @@ app.put('/perfil', async (req, res) => {
 });
 
 
+// Rutas para obtener denuncias de un usuario específico
+// Agregar estas rutas a server.js
 
+// Ruta para obtener denuncias atendidas de un usuario específico
+app.get('/denunciasUsuario/atendidas/:idCiudadano', async (req, res) => {
+  const { idCiudadano } = req.params;
+
+  try {
+    const [denuncias] = await pool.query(`
+      SELECT *
+      FROM denuncia
+      WHERE estado = 'ATENDIDO' AND id_ciudadano = ?
+      ORDER BY fecha DESC, hora DESC
+    `, [idCiudadano]);
+
+    res.json(denuncias);
+  } catch (error) {
+    console.error('Error al obtener denuncias atendidas del usuario:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error en el servidor al obtener denuncias atendidas'
+    });
+  }
+});
+
+// Ruta para obtener denuncias pendientes de un usuario específico
+app.get('/denunciasUsuario/pendientes/:idCiudadano', async (req, res) => {
+  const { idCiudadano } = req.params;
+
+  try {
+    const [denuncias] = await pool.query(`
+      SELECT *
+      FROM denuncia
+      WHERE estado = 'PENDIENTE' AND id_ciudadano = ?
+      ORDER BY fecha DESC, hora DESC
+    `, [idCiudadano]);// Ruta para obtener una denuncia específica por su ID
+    app.get('/denuncia/:idDenuncia', async (req, res) => {
+      const { idDenuncia } = req.params;
+    
+      try {
+        const [denuncias] = await pool.query(
+          'SELECT * FROM denuncia WHERE id_denuncia = ?',
+          [idDenuncia]
+        );
+    
+        if (denuncias.length === 0) {
+          return res.status(404).json({
+            success: false,
+            message: 'Denuncia no encontrada'
+          });
+        }
+    
+        res.json({
+          success: true,
+          denuncia: denuncias[0]
+        });
+      } catch (error) {
+        console.error('Error al obtener denuncia:', error);
+        res.status(500).json({
+          success: false,
+          message: 'Error en el servidor al obtener la denuncia'
+        });
+      }
+    });
+    
+    res.json(denuncias);
+  } catch (error) {
+    console.error('Error al obtener denuncias pendientes del usuario:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error en el servidor al obtener denuncias pendientes'
+    });
+  }
+});
+
+// Ruta para obtener una denuncia específica por su ID
+app.get('/denuncia/:idDenuncia', async (req, res) => {
+  const { idDenuncia } = req.params;
+
+  try {
+    const [denuncias] = await pool.query(
+      'SELECT * FROM denuncia WHERE id_denuncia = ?',
+      [idDenuncia]
+    );
+
+    if (denuncias.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Denuncia no encontrada'
+      });
+    }
+
+    res.json({
+      success: true,
+      denuncia: denuncias[0]
+    });
+  } catch (error) {
+    console.error('Error al obtener denuncia:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error en el servidor al obtener la denuncia'
+    });
+  }
+});
+
+// Ruta para actualizar una denuncia existente
+app.put('/denuncia/:idDenuncia', async (req, res) => {
+  const { idDenuncia } = req.params;
+  const { descripcion, modulo_epi, hora, fecha, tipo, calle_avenida, evidencia } = req.body;
+
+  // Validaciones básicas
+  if (!descripcion || !modulo_epi || !hora || !fecha || !tipo || !calle_avenida) {
+    return res.status(400).json({ 
+      success: false,
+      message: 'Todos los campos obligatorios son requeridos' 
+    });
+  }
+
+  try {
+    // Primero verificar si la denuncia existe y obtener su información actual
+    const [denunciaActual] = await pool.query(
+      'SELECT fue_modificada, fecha, hora, estado FROM denuncia WHERE id_denuncia = ?',
+      [idDenuncia]
+    );
+
+    if (denunciaActual.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Denuncia no encontrada'
+      });
+    }
+
+    const denuncia = denunciaActual[0];
+
+    // Verificar si ya fue modificada
+    if (denuncia.fue_modificada === 1) {
+      return res.status(400).json({
+        success: false,
+        message: 'Esta denuncia ya fue modificada anteriormente'
+      });
+    }
+
+    // Verificar si aún está en estado pendiente
+    if (denuncia.estado !== 'PENDIENTE') {
+      return res.status(400).json({
+        success: false,
+        message: 'Solo se pueden modificar denuncias pendientes'
+      });
+    }
+
+    // Verificar si aún está dentro del tiempo límite (10 minutos)
+    const fechaRegistro = new Date(`${denuncia.fecha}T${denuncia.hora}`);
+    const now = new Date();
+    const diffMinutes = (now.getTime() - fechaRegistro.getTime()) / (1000 * 60);
+
+    if (diffMinutes > 10) {
+      return res.status(400).json({
+        success: false,
+        message: 'El tiempo para modificar esta denuncia ha expirado'
+      });
+    }
+
+    // Actualizar la denuncia y marcar como modificada
+    await pool.query(
+      `UPDATE denuncia 
+       SET descripcion = ?, modulo_epi = ?, hora = ?, fecha = ?, 
+           tipo = ?, calle_avenida = ?, evidencia = ?, fue_modificada = 1
+       WHERE id_denuncia = ?`,
+      [descripcion, modulo_epi, hora, fecha, tipo, calle_avenida, evidencia || null, idDenuncia]
+    );
+
+    res.json({
+      success: true,
+      message: 'Denuncia actualizada exitosamente'
+    });
+  } catch (error) {
+    console.error('Error al actualizar denuncia:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error en el servidor al actualizar la denuncia'
+    });
+  }
+});
   
 // Iniciar servidor
 app.listen(PORT, () => {
