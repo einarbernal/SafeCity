@@ -587,7 +587,157 @@ app.put('/denuncia/:idDenuncia', async (req, res) => {
     });
   }
 });
+
+// Agregar o reemplazar estas rutas en tu server.js
+
+// Ruta para obtener todas las noticias (mejorada)
+app.get('/noticias', async (req, res) => {
+  try {
+    const [noticias] = await pool.query(`
+      SELECT 
+        n.*,
+        CONCAT(p.nombres, ' ', p.apellido_paterno, ' ', p.apellido_materno) AS nombre_policia
+      FROM noticia n
+      JOIN policia p ON n.id_policia = p.id_policia
+      ORDER BY n.fecha DESC, n.hora DESC
+    `);
+
+    // Formatear los datos si es necesario
+    const noticiasFormateadas = noticias.map(noticia => ({
+      ...noticia,
+      // Asegurar que la imagen sea null si está vacía
+      imagen: noticia.imagen || null,
+      // Formatear fecha y hora si es necesario
+      fecha: noticia.fecha,
+      hora: noticia.hora
+    }));
+
+    res.json(noticiasFormateadas);
+  } catch (error) {
+    console.error('Error al obtener noticias:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error en el servidor al obtener noticias',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Ruta para obtener noticias por categoría/filtro
+app.get('/noticias/categoria/:categoria', async (req, res) => {
+  const { categoria } = req.params;
   
+  try {
+    let whereClause = '';
+    let queryParams = [];
+
+    // Definir filtros según la categoría
+    switch (categoria.toLowerCase()) {
+      case 'robos':
+        whereClause = 'WHERE (LOWER(n.titulo) LIKE ? OR LOWER(n.descripcion) LIKE ?)';
+        queryParams = ['%robo%', '%robo%'];
+        break;
+      case 'accidentes':
+        whereClause = 'WHERE (LOWER(n.titulo) LIKE ? OR LOWER(n.descripcion) LIKE ? OR LOWER(n.titulo) LIKE ? OR LOWER(n.descripcion) LIKE ?)';
+        queryParams = ['%accidente%', '%accidente%', '%tránsito%', '%tránsito%'];
+        break;
+      case 'alertas':
+        whereClause = 'WHERE (LOWER(n.titulo) LIKE ? OR LOWER(n.descripcion) LIKE ? OR LOWER(n.titulo) LIKE ? OR LOWER(n.descripcion) LIKE ?)';
+        queryParams = ['%alerta%', '%alerta%', '%emergencia%', '%emergencia%'];
+        break;
+      case 'reciente':
+      default:
+        // Sin filtro, mostrar todas
+        whereClause = '';
+        queryParams = [];
+        break;
+    }
+
+    const query = `
+      SELECT 
+        n.*,
+        CONCAT(p.nombres, ' ', p.apellido_paterno, ' ', p.apellido_materno) AS nombre_policia
+      FROM noticia n
+      JOIN policia p ON n.id_policia = p.id_policia
+      ${whereClause}
+      ORDER BY n.fecha DESC, n.hora DESC
+    `;
+
+    const [noticias] = await pool.query(query, queryParams);
+
+    const noticiasFormateadas = noticias.map(noticia => ({
+      ...noticia,
+      imagen: noticia.imagen || null,
+      fecha: noticia.fecha,
+      hora: noticia.hora
+    }));
+
+    res.json(noticiasFormateadas);
+  } catch (error) {
+    console.error('Error al obtener noticias por categoría:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error en el servidor al obtener noticias por categoría',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Ruta para obtener estadísticas de noticias (opcional)
+app.get('/noticias/estadisticas', async (req, res) => {
+  try {
+    const [stats] = await pool.query(`
+      SELECT 
+        COUNT(*) as total_noticias,
+        COUNT(CASE WHEN LOWER(titulo) LIKE '%robo%' OR LOWER(descripcion) LIKE '%robo%' THEN 1 END) as robos,
+        COUNT(CASE WHEN LOWER(titulo) LIKE '%accidente%' OR LOWER(descripcion) LIKE '%accidente%' THEN 1 END) as accidentes,
+        COUNT(CASE WHEN LOWER(titulo) LIKE '%alerta%' OR LOWER(descripcion) LIKE '%alerta%' THEN 1 END) as alertas,
+        DATE(MAX(fecha)) as ultima_noticia
+      FROM noticia
+    `);
+
+    res.json(stats[0]);
+  } catch (error) {
+    console.error('Error al obtener estadísticas de noticias:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error en el servidor al obtener estadísticas'
+    });
+  }
+});
+
+// Ruta para buscar noticias por texto
+app.get('/noticias/buscar/:texto', async (req, res) => {
+  const { texto } = req.params;
+  
+  try {
+    const [noticias] = await pool.query(`
+      SELECT 
+        n.*,
+        CONCAT(p.nombres, ' ', p.apellido_paterno, ' ', p.apellido_materno) AS nombre_policia
+      FROM noticia n
+      JOIN policia p ON n.id_policia = p.id_policia
+      WHERE (LOWER(n.titulo) LIKE ? OR LOWER(n.descripcion) LIKE ?)
+      ORDER BY n.fecha DESC, n.hora DESC
+    `, [`%${texto.toLowerCase()}%`, `%${texto.toLowerCase()}%`]);
+
+    const noticiasFormateadas = noticias.map(noticia => ({
+      ...noticia,
+      imagen: noticia.imagen || null,
+      fecha: noticia.fecha,
+      hora: noticia.hora
+    }));
+
+    res.json(noticiasFormateadas);
+  } catch (error) {
+    console.error('Error al buscar noticias:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error en el servidor al buscar noticias'
+    });
+  }
+});
+
 // Iniciar servidor
 app.listen(PORT, () => {
     console.log(`Servidor backend corriendo en http://localhost:${PORT}`);
