@@ -34,7 +34,7 @@ export default function DescripcionReportes() {
     nombre_denunciante: params.nombre_denunciante ? String(params.nombre_denunciante) : undefined,
   };
 
-  const SERVER_IP = '192.168.31.104';
+  const SERVER_IP = '192.168.1.66';
   const API_URL = `http://${SERVER_IP}:3000`;
 
   const handleAtenderCaso = async () => {
@@ -50,7 +50,7 @@ export default function DescripcionReportes() {
       if (!response.ok) throw new Error('Error al actualizar el caso');
 
       router.push({
-        pathname: '/(policia)/reportes',
+        pathname: '/(policia)/(tab)/reportes',
         params: {
           id_denuncia: caso.id_denuncia.toString(),
           descripcion: caso.descripcion,
@@ -72,7 +72,7 @@ export default function DescripcionReportes() {
 
   const handleRegresar = () => {
     router.push({
-      pathname: '/(policia)/reportes',
+      pathname: '/(policia)/(tab)/reportes',
       params: {
         id_denuncia: caso.id_denuncia.toString(),
         descripcion: caso.descripcion,

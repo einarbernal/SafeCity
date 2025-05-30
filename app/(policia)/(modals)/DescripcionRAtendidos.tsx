@@ -3,6 +3,7 @@ import { ThemedView } from '@/components/ThemedView';
 import { FontAwesome } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native';
 
 interface Reporte {
   id_denuncia: number;
@@ -36,7 +37,7 @@ export default function VisualizarReporte() {
 
   const handleRegresar = () => {
     router.push({
-          pathname: '/(policia)/reportes',
+          pathname: '/(policia)/(tab)/reportes',
           params: {
             id_denuncia: caso.id_denuncia.toString(),
             descripcion: caso.descripcion,
@@ -53,6 +54,7 @@ export default function VisualizarReporte() {
   };
 
   return (
+    <SafeAreaView style={{ flex: 1 }}>
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
@@ -120,6 +122,7 @@ export default function VisualizarReporte() {
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 

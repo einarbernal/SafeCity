@@ -26,7 +26,7 @@ interface Denuncia {
 }
 
 export default function ReportesScreen() {
-  const SERVER_IP = '192.168.31.104';
+  const SERVER_IP = '192.168.1.66';
   const API_URL = `http://${SERVER_IP}:3000`;
 
   const router = useRouter();
@@ -130,7 +130,7 @@ export default function ReportesScreen() {
             <TouchableOpacity
               style={styles.actionButton}
               onPress={() => router.push({
-                pathname: '/(tabs)/DescripcionRAtendidos',
+                pathname: '/(policia)/(modals)/DescripcionRAtendidos',
                 params: {
                   id_denuncia: denuncia.id_denuncia.toString(),
                   descripcion: denuncia.descripcion,
@@ -176,7 +176,7 @@ export default function ReportesScreen() {
             <TouchableOpacity
               style={styles.actionButton}
               onPress={() => router.push({
-                pathname: '/(tabs)/DescripcionReportes',
+                pathname: '/(policia)/(modals)/DescripcionReportes',
                 params: {
                   id_denuncia: caso.id_denuncia.toString(),
                   descripcion: caso.descripcion,
