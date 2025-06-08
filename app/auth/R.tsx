@@ -29,8 +29,8 @@ const RegistroCiudadano = () => {
     setModalSuccessVisible(true);
   };
 
-  const SERVER_IP = '192.168.26.7';
-  const API_URL = `http://${SERVER_IP}:3000/registro`;
+  const SERVER_IP = 'safecity.spartan-soft.com';
+  const API_URL = `https://${SERVER_IP}/api/registro`;
 
   const handleSubmit = async () => {
     // Validaciones

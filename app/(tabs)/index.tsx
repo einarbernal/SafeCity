@@ -40,8 +40,8 @@ const NoticiasScreen = () => {
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<CategoriaNoticia>('Reciente');
   const router = useRouter();
 
-  const SERVER_IP = '192.168.1.66';
-  const API_URL_NOTICIAS = `http://${SERVER_IP}:3000/noticias`;
+  const SERVER_IP = 'safecity.spartan-soft.com';
+  const API_URL_NOTICIAS = `https://${SERVER_IP}/api/noticias`;
 
   useEffect(() => {
     fetchNoticias();

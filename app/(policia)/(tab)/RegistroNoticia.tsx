@@ -37,8 +37,8 @@ const NoticiaScreen = () => {
     setModalErrorVisible(true);
   };
 
-  const SERVER_IP = '192.168.1.66';
-  const API_URL = `http://${SERVER_IP}:3000/noticias`;
+  const SERVER_IP = 'safecity.spartan-soft.com';
+  const API_URL = `https://${SERVER_IP}/api/noticias`;
 
   useEffect(() => {
     const loadUserData = async () => {

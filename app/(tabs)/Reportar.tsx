@@ -33,8 +33,8 @@ const DenunciaScreen = () => {
   };
 
 
-  const SERVER_IP = '192.168.1.66';
-  const API_URL = `http://${SERVER_IP}:3000/denuncias`;
+  const SERVER_IP = 'safecity.spartan-soft.com';
+  const API_URL = `https://${SERVER_IP}/api/denuncias`;
 
   useEffect(() => {
     const loadUserData = async () => {

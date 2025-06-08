@@ -34,8 +34,8 @@ export default function DescripcionReportes() {
     nombre_denunciante: params.nombre_denunciante ? String(params.nombre_denunciante) : undefined,
   };
 
-  const SERVER_IP = '192.168.1.66';
-  const API_URL = `http://${SERVER_IP}:3000`;
+  const SERVER_IP = 'safecity.spartan-soft.com';
+  const API_URL = `https://${SERVER_IP}/api`;
 
   const handleAtenderCaso = async () => {
     try {

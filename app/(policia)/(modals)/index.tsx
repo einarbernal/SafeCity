@@ -23,8 +23,8 @@ interface Denuncia {
 }
 
 export default function ReportesScreen() {
-  const SERVER_IP = '192.168.1.66';
-  const API_URL = `http://${SERVER_IP}:3000`;
+  const SERVER_IP = 'safecity.spartan-soft.com';
+  const API_URL = `https://${SERVER_IP}/api`;
 
   const [denunciasAtendidas, setDenunciasAtendidas] = useState<Denuncia[]>([]);
   const [casosPendientes, setCasosPendientes] = useState<Denuncia[]>([]);

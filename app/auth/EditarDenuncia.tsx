@@ -53,9 +53,9 @@ const EditarDenunciaScreen = () => {
   const [errorMessage, setErrorMessage] = useState('');
 
   // Usar la misma IP que en Historial.tsx
-  const SERVER_IP = '192.168.1.66';
-  const API_URL_GET_DENUNCIA = `http://${SERVER_IP}:3000/denuncia/${idDenuncia}`;
-  const API_URL_UPDATE_DENUNCIA = `http://${SERVER_IP}:3000/denuncia/${idDenuncia}`;
+  const SERVER_IP = 'safecity.spartan-soft.com';
+  const API_URL_GET_DENUNCIA = `https://${SERVER_IP}/api/denuncia/${idDenuncia}`;
+  const API_URL_UPDATE_DENUNCIA = `https://${SERVER_IP}/api/denuncia/${idDenuncia}`;
 
   // Datos para los ComboBox
   const modulosPoliciales = [

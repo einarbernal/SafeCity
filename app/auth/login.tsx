@@ -1,7 +1,7 @@
-import { FontAwesome } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import { FontAwesome } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -11,97 +11,109 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
-} from 'react-native';
+  View,
+} from "react-native";
 
 const LoginScreen = () => {
-  const [correo, setCorreo] = useState('');
-  const [contraseña, setContraseña] = useState('');
+  const [correo, setCorreo] = useState("");
+  const [contraseña, setContraseña] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const router = useRouter();
 
-
   // Configuración del servidor
-  const SERVER_IP = '192.168.1.66'; // Cambia por tu IP
+  const SERVER_IP = "safecity.spartan-soft.com"; // Cambia por tu IP
 
-  const API_URL = `http://${SERVER_IP}:3000/login`;
+  const API_URL = `https://${SERVER_IP}/api/login`;
 
   const handleLogin = async () => {
     if (!correo || !contraseña) {
-      setError('Correo y contraseña son requeridos');
+      setError("Correo y contraseña son requeridos");
       return;
     }
 
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
-  const response = await fetch(API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ correo, contraseña }),
-  });
-
-  const data = await response.json();
-
-  if (data.success) {
-    // Guardar datos del usuario/policía
-    await AsyncStorage.setItem('userData', JSON.stringify(data.usuario));
-    
-    // Redirigir según el tipo de usuario
-    if (data.usuario.id_ciudadano) {
-      // Redirigir al área de ciudadano
-      router.replace({
-        pathname: '/(tabs)',
-        params: {
-          idCiudadano: data.usuario.id_ciudadano,
-          nombres: data.usuario.nombres,
-          apellidos: `${data.usuario.apellido_paterno} ${data.usuario.apellido_materno}`
-        }
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ correo, contraseña }),
       });
-    } else if (data.usuario.id_policia) {
-      // Redirigir al área policial
-      router.replace({
-        pathname: '/(policia)/(tab)/reportes',
-        params: {
-          idPolicia: data.usuario.id_policia,
-          nombres: data.usuario.nombres,
-          apellidos: `${data.usuario.apellido_paterno} ${data.usuario.apellido_materno}`,
-         
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Guardar datos del usuario/policía
+        await AsyncStorage.setItem("userData", JSON.stringify(data.usuario));
+
+        // Redirigir según el tipo de usuario
+        if (data.usuario.id_ciudadano) {
+          // Redirigir al área de ciudadano
+          router.replace({
+            pathname: "/(tabs)",
+            params: {
+              idCiudadano: data.usuario.id_ciudadano,
+              nombres: data.usuario.nombres,
+              apellidos: `${data.usuario.apellido_paterno} ${data.usuario.apellido_materno}`,
+            },
+          });
+        } else if (data.usuario.id_policia) {
+          // Redirigir al área policial
+          router.replace({
+            pathname: "/(policia)/(tab)/reportes",
+            params: {
+              idPolicia: data.usuario.id_policia,
+              nombres: data.usuario.nombres,
+              apellidos: `${data.usuario.apellido_paterno} ${data.usuario.apellido_materno}`,
+            },
+          });
+        } else if (data.usuario.id_admin) {
+          // Redirigir al área de administrador
+          router.replace({
+            pathname: "/(admin)/(tab)/inicio",
+            params: {
+              idAdmin: data.usuario.id_admin,
+              correo: data.usuario.correo,
+            },
+          });
         }
-      });
+      } else {
+        setError(data.message || "Credenciales incorrectas");
+      }
+    } catch (err) {
+      setError("Error de conexión con el servidor");
+      console.error("Login error:", err);
+    } finally {
+      setLoading(false);
     }
-  } else {
-    setError(data.message || 'Credenciales incorrectas');
-  }
-} catch (err) {
-  setError('Error de conexión con el servidor');
-  console.error('Login error:', err);
-} finally {
-  setLoading(false);
-}
-  }
+  };
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.container}
     >
-      <Image 
-        source={require('@/assets/images/logo.png')} 
+      <Image
+        source={require("@/assets/images/logo.png")}
         style={styles.logo}
         resizeMode="contain"
       />
 
       <Text style={styles.title}>Iniciar Sesión</Text>
-      
+
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
       <View style={styles.inputContainer}>
-        <FontAwesome name="user" size={20} color="#666" style={styles.inputIcon} />
+        <FontAwesome
+          name="user"
+          size={20}
+          color="#666"
+          style={styles.inputIcon}
+        />
         <TextInput
           style={styles.input}
           placeholder="Correo"
@@ -114,7 +126,12 @@ const LoginScreen = () => {
       </View>
 
       <View style={styles.inputContainer}>
-        <FontAwesome name="lock" size={20} color="#666" style={styles.inputIcon} />
+        <FontAwesome
+          name="lock"
+          size={20}
+          color="#666"
+          style={styles.inputIcon}
+        />
         <TextInput
           style={styles.input}
           placeholder="Contraseña"
@@ -125,7 +142,7 @@ const LoginScreen = () => {
         />
       </View>
 
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.loginButton}
         onPress={handleLogin}
         disabled={loading}
@@ -137,10 +154,9 @@ const LoginScreen = () => {
         )}
       </TouchableOpacity>
 
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.linkButton}
-        onPress={() => router.push('/auth/R')}
-
+        onPress={() => router.push("/auth/R")}
       >
         <Text style={styles.linkText}>¿No tienes cuenta? Regístrate</Text>
       </TouchableOpacity>
@@ -151,9 +167,9 @@ const LoginScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#1D5C1D',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#1D5C1D",
     padding: 20,
   },
   logo: {
@@ -163,25 +179,25 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: 'white',
+    fontWeight: "bold",
+    color: "white",
     marginBottom: 30,
   },
   errorText: {
-    color: 'red',
+    color: "red",
     marginBottom: 15,
-    textAlign: 'center',
+    textAlign: "center",
   },
   inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%',
+    flexDirection: "row",
+    alignItems: "center",
+    width: "100%",
     marginBottom: 15,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 8,
     paddingHorizontal: 15,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: "#ddd",
   },
   inputIcon: {
     marginRight: 10,
@@ -190,29 +206,29 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 50,
     fontSize: 16,
-    color: '#333',
+    color: "#333",
   },
   loginButton: {
-    width: '100%',
+    width: "100%",
     height: 50,
-    backgroundColor: '#FFD700',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#FFD700",
+    justifyContent: "center",
+    alignItems: "center",
     borderRadius: 8,
     marginTop: 20,
   },
   loginButtonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   linkButton: {
     marginTop: 20,
   },
   linkText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
-    textDecorationLine: 'underline',
+    textDecorationLine: "underline",
   },
 });
 
