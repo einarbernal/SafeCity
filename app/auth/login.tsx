@@ -21,7 +21,6 @@ const LoginScreen = () => {
   const [error, setError] = useState('');
   const router = useRouter();
 
-
   // Configuración del servidor
   const SERVER_IP = '192.168.1.66'; // Cambia por tu IP
 
@@ -37,53 +36,63 @@ const LoginScreen = () => {
     setError('');
 
     try {
-  const response = await fetch(API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ correo, contraseña }),
-  });
-
-  const data = await response.json();
-
-  if (data.success) {
-    // Guardar datos del usuario/policía
-    await AsyncStorage.setItem('userData', JSON.stringify(data.usuario));
-    
-    // Redirigir según el tipo de usuario
-    if (data.usuario.id_ciudadano) {
-      // Redirigir al área de ciudadano
-      router.replace({
-        pathname: '/(tabs)',
-        params: {
-          idCiudadano: data.usuario.id_ciudadano,
-          nombres: data.usuario.nombres,
-          apellidos: `${data.usuario.apellido_paterno} ${data.usuario.apellido_materno}`
-        }
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ correo, contraseña }),
       });
-    } else if (data.usuario.id_policia) {
-      // Redirigir al área policial
-      router.replace({
-        pathname: '/(policia)/(tab)/reportes',
-        params: {
-          idPolicia: data.usuario.id_policia,
-          nombres: data.usuario.nombres,
-          apellidos: `${data.usuario.apellido_paterno} ${data.usuario.apellido_materno}`,
-         
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Guardar datos del usuario/policía/administrador
+        await AsyncStorage.setItem('userData', JSON.stringify(data.usuario));
+        
+        // Redirigir según el tipo de usuario
+        if (data.usuario.id_ciudadano) {
+          // Redirigir al área de ciudadano
+          router.replace({
+            pathname: '/(tabs)',
+            params: {
+              idCiudadano: data.usuario.id_ciudadano,
+              nombres: data.usuario.nombres,
+              apellidos: `${data.usuario.apellido_paterno} ${data.usuario.apellido_materno}`
+            }
+          });
+        } else if (data.usuario.id_policia) {
+          // Redirigir al área policial
+          router.replace({
+            pathname: '/(policia)/(tab)/reportes',
+            params: {
+              idPolicia: data.usuario.id_policia,
+              nombres: data.usuario.nombres,
+              apellidos: `${data.usuario.apellido_paterno} ${data.usuario.apellido_materno}`,
+              moduloEpi: data.usuario.modulo_epi
+            }
+          });
+        } else if (data.usuario.id_admin) {
+          // Redirigir al área de administrador
+          router.replace({
+            pathname: '/(policia)/(tab)/registroPolicia',
+            params: {
+              idAdmin: data.usuario.id_admin,
+              nombres: data.usuario.nombres || 'Administrador',
+              correo: data.usuario.correo
+            }
+          });
         }
-      });
+      } else {
+        setError(data.message || 'Credenciales incorrectas');
+      }
+    } catch (err) {
+      setError('Error de conexión con el servidor');
+      console.error('Login error:', err);
+    } finally {
+      setLoading(false);
     }
-  } else {
-    setError(data.message || 'Credenciales incorrectas');
-  }
-} catch (err) {
-  setError('Error de conexión con el servidor');
-  console.error('Login error:', err);
-} finally {
-  setLoading(false);
-}
-  }
+  };
 
   return (
     <KeyboardAvoidingView
@@ -140,7 +149,6 @@ const LoginScreen = () => {
       <TouchableOpacity 
         style={styles.linkButton}
         onPress={() => router.push('/auth/R')}
-
       >
         <Text style={styles.linkText}>¿No tienes cuenta? Regístrate</Text>
       </TouchableOpacity>

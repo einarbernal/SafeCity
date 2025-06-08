@@ -1,6 +1,6 @@
-import { Tabs } from 'expo-router';
 import { FontAwesome, MaterialIcons } from '@expo/vector-icons';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
+import { Tabs } from 'expo-router';
 import { useColorScheme } from 'react-native';
 
 const Colors = {
@@ -70,6 +70,17 @@ export default function PoliciaLayout() {
             <MaterialIcons name="add-box" size={30} color={color} />
           ),
           headerTitle: 'Registrar Noticia' // Título diferente para el header
+        }}
+      />
+      <Tabs.Screen
+        name="RegistroPolicia"
+        options={{
+          title: 'Registrar Policia', // Título en el header
+          tabBarLabel: 'Subir', // Etiqueta en el tab bar
+          tabBarIcon: ({ color }) => (
+            <MaterialIcons name="add-box" size={30} color={color} />
+          ),
+          headerTitle: 'Registrar Policia' // Título diferente para el header
         }}
       />
 

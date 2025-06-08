@@ -39,7 +39,7 @@ pool.getConnection()
 
 
 
-// Ruta para login
+// Ruta para login que verifica en las tres tablas
 app.post('/login', async (req, res) => {
   const { correo, contraseña } = req.body;
 
@@ -51,7 +51,7 @@ app.post('/login', async (req, res) => {
   }
 
   try {
-    // 1. Primero buscar en la tabla de ciudadanos
+    // 1. Buscar en la tabla de ciudadanos
     const [ciudadanos] = await pool.query(
       'SELECT id_ciudadano, nombres, apellido_paterno, apellido_materno, correo FROM ciudadano WHERE correo = ? AND contraseña = ?',
       [correo, contraseña]
@@ -68,15 +68,16 @@ app.post('/login', async (req, res) => {
           apellido_paterno: ciudadano.apellido_paterno,
           apellido_materno: ciudadano.apellido_materno,
           correo: ciudadano.correo,
-          nombreCompleto: `${ciudadano.nombres} ${ciudadano.apellido_paterno} ${ciudadano.apellido_materno}`
-
+          tipo: 'ciudadano'
         }
       });
     }
 
-    // 2. Si no encuentra ciudadano, buscar en policías
+    // 2. Buscar en la tabla de policías
     const [policias] = await pool.query(
-      'SELECT id_policia, nombres, apellido_paterno, apellido_materno, correo FROM policia WHERE correo = ? AND contraseña = ?',
+      `SELECT id_policia, nombres, apellido_paterno, apellido_materno, correo, modulo_epi 
+       FROM policia 
+       WHERE correo = ? AND contraseña = ?`,
       [correo, contraseña]
     );
 
@@ -91,12 +92,34 @@ app.post('/login', async (req, res) => {
           apellido_paterno: policia.apellido_paterno,
           apellido_materno: policia.apellido_materno,
           correo: policia.correo,
-          nombreCompleto: `${policia.nombres} ${policia.apellido_paterno} ${policia.apellido_materno}`
+          modulo_epi: policia.modulo_epi,
+          tipo: 'policia'
         }
       });
     }
 
-    // 3. Si no encuentra en ninguna tabla
+    // 3. Buscar en la tabla de administradores (versión simplificada)
+    const [administradores] = await pool.query(
+      `SELECT id_admin, correo 
+       FROM administrador 
+       WHERE correo = ? AND contraseña = ?`,
+      [correo, contraseña]
+    );
+
+    if (administradores.length > 0) {
+      const admin = administradores[0];
+      return res.json({
+        success: true,
+        message: 'Login exitoso (administrador)',
+        usuario: {
+          id_admin: admin.id_admin,
+          correo: admin.correo,
+          tipo: 'admin'
+        }
+      });
+    }
+
+    // Si no encuentra en ninguna tabla
     return res.status(401).json({
       success: false,
       message: 'Credenciales incorrectas'
@@ -279,25 +302,59 @@ app.post('/registro', async (req, res) => {
 });
 // Ruta para recuperar casos pendientes, ordenados por prioridad de tipo
 app.get('/casosPendientes', async (req, res) => {
+  const idPolicia = req.query.idPolicia;
+
+  if (!idPolicia) {
+    return res.status(400).json({
+      success: false,
+      message: 'Falta el parámetro idPolicia'
+    });
+  }
+
   try {
+    // 1. Obtener el módulo EPI del policía
+    const [policiaRows] = await pool.query(
+      'SELECT modulo_epi FROM policia WHERE id_policia = ?',
+      [idPolicia]
+    );
+
+    if (policiaRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No se encontró el policía con ese ID'
+      });
+    }
+
+    const moduloEpiPolicia = policiaRows[0].modulo_epi;
+
+    // 2. Obtener solo las denuncias pendientes del MISMO módulo EPI
     const [casos] = await pool.query(`
       SELECT 
-        d.*,
+        d.id_denuncia,
+        d.descripcion,
+        d.tipo,
+        d.fecha,
+        d.hora,
+        d.calle_avenida,
+        d.modulo_epi,
         CONCAT(c.nombres, ' ', c.apellido_paterno, ' ', c.apellido_materno) AS nombre_denunciante
       FROM denuncia d
       JOIN ciudadano c ON d.id_ciudadano = c.id_ciudadano
-      WHERE d.estado = 'pendiente'
+      WHERE d.estado = 'pendiente' 
+        AND d.modulo_epi = ?
       ORDER BY
         CASE d.tipo
-          WHEN 'ASESINATO'            THEN 1
-          WHEN 'asalto'               THEN 2
-          WHEN 'accidente de transito' THEN 3
+          WHEN 'ASESINATO' THEN 1
+          WHEN 'ASALTO' THEN 2
+          WHEN 'ACCIDENTE DE TRANSITO' THEN 3
           ELSE 4
         END,
-        d.fecha DESC, d.hora DESC
-    `);
+        d.fecha DESC, 
+        d.hora DESC
+    `, [moduloEpiPolicia]); // Filtro estricto por módulo EPI
 
-    res.json(casos);
+   return res.json(casos);
+
   } catch (error) {
     console.error('Error al obtener casos pendientes:', error);
     res.status(500).json({
@@ -335,16 +392,51 @@ app.post('/atenderDenuncia', async (req, res) => {
 
 // Ruta para obtener todas las denuncias que ya fueron atendidas
 app.get('/denunciasAtendidas', async (req, res) => {
+  const idPolicia = req.query.idPolicia;
+
+  if (!idPolicia) {
+    return res.status(400).json({
+      success: false,
+      message: 'Falta el parámetro idPolicia'
+    });
+  }
+
   try {
+    // 1. Obtener el módulo EPI del policía
+    const [policiaRows] = await pool.query(
+      'SELECT modulo_epi FROM policia WHERE id_policia = ?',
+      [idPolicia]
+    );
+
+    if (policiaRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No se encontró el policía con ese ID'
+      });
+    }
+
+    const moduloEpiPolicia = policiaRows[0].modulo_epi;
+
+    // 2. Obtener denuncias atendidas solo del mismo módulo EPI
     const [denuncias] = await pool.query(`
       SELECT 
-        d.*,
-        CONCAT(c.nombres, ' ', c.apellido_paterno, ' ', c.apellido_materno) AS nombre_denunciante
+        d.id_denuncia,
+        d.descripcion,
+        d.tipo,
+        d.fecha,
+        d.hora,
+        d.calle_avenida,
+        d.modulo_epi,
+        d.id_policia,
+        CONCAT(c.nombres, ' ', c.apellido_paterno, ' ', c.apellido_materno) AS nombre_denunciante,
+        CONCAT(p.nombres, ' ', p.apellido_paterno) AS nombre_policia
       FROM denuncia d
       JOIN ciudadano c ON d.id_ciudadano = c.id_ciudadano
+      LEFT JOIN policia p ON d.id_policia = p.id_policia
       WHERE d.estado = 'ATENDIDO'
+        AND d.modulo_epi = ?
       ORDER BY d.fecha DESC, d.hora DESC
-    `);
+    `, [moduloEpiPolicia]);
 
     res.json(denuncias);
   } catch (error) {
@@ -355,7 +447,6 @@ app.get('/denunciasAtendidas', async (req, res) => {
     });
   }
 });
-
 
 // Ruta para actualizar perfil
 app.put('/perfil', async (req, res) => {
@@ -738,6 +829,91 @@ app.get('/noticias/buscar/:texto', async (req, res) => {
   }
 });
 
+// Ruta para registro de policías con id_admin
+app.post('/registro-policia', async (req, res) => {
+  const { nombres, apellido_paterno, apellido_materno, correo, contraseña, modulo_epi, id_admin } = req.body;
+
+  // Validaciones básicas
+  if (!nombres || !apellido_paterno || !apellido_materno || !correo || !contraseña || !modulo_epi || !id_admin) {
+    return res.status(400).json({ 
+      success: false,
+      message: 'Todos los campos son requeridos, incluyendo el módulo EPI y ID de administrador' 
+    });
+  }
+
+  // Validar que el módulo EPI sea uno de los permitidos
+  const modulosPermitidos = [
+    'EPI_N5_Alalay',
+    'EPI_N1_Coña Coña',
+    'EPI_N3_Jaihuayco',
+    'EPI_N7_Sur',
+    'EPI_N6_Central'
+  ];
+
+  if (!modulosPermitidos.includes(modulo_epi)) {
+    return res.status(400).json({
+      success: false,
+      message: 'El módulo EPI seleccionado no es válido'
+    });
+  }
+
+  // Validar que el id_admin existe y es válido
+  try {
+    const [admin] = await pool.query(
+      'SELECT id_admin FROM administrador WHERE id_admin = ?',
+      [id_admin]
+    );
+
+    if (admin.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'El ID de administrador no es válido'
+      });
+    }
+  } catch (error) {
+    console.error('Error al validar administrador:', error);
+    return res.status(500).json({ 
+      success: false,
+      message: 'Error al validar el administrador' 
+    });
+  }
+
+  try {
+    // Verificar si el correo ya existe
+    const [existingUsers] = await pool.query(
+      'SELECT id_policia FROM policia WHERE correo = ?',
+      [correo]
+    );
+
+    if (existingUsers.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'El correo electrónico ya está registrado'
+      });
+    }
+
+    // Insertar nuevo policía con id_admin
+    const [result] = await pool.query(
+      `INSERT INTO policia 
+      (nombres, apellido_paterno, apellido_materno, correo, contraseña, modulo_epi, id_admin) 
+      VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [nombres, apellido_paterno, apellido_materno, correo, contraseña, modulo_epi, id_admin]
+    );
+
+    res.json({ 
+      success: true,
+      message: 'Policía registrado exitosamente',
+      policiaId: result.insertId,
+      id_admin: id_admin
+    });
+  } catch (error) {
+    console.error('Error al registrar policía:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Error al registrar el policía en la base de datos' 
+    });
+  }
+});
 // Iniciar servidor
 app.listen(PORT, () => {
     console.log(`Servidor backend corriendo en http://localhost:${PORT}`);

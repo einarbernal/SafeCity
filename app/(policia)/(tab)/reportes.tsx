@@ -1,8 +1,9 @@
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { FontAwesome } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
+
 import {
   ActivityIndicator,
   Alert,
@@ -26,7 +27,7 @@ interface Denuncia {
 }
 
 export default function ReportesScreen() {
-  const SERVER_IP = '192.168.1.66';
+  const SERVER_IP = '192.168.1.8';
   const API_URL = `http://${SERVER_IP}:3000`;
 
   const router = useRouter();
@@ -34,48 +35,32 @@ export default function ReportesScreen() {
   const [casosPendientes, setCasosPendientes] = useState<Denuncia[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const { idPolicia} = useLocalSearchParams();
 
   const fetchReportes = async () => {
-    try {
-      const resPendientes = await fetch(`${API_URL}/casosPendientes`);
-      if (!resPendientes.ok) throw new Error('Error al obtener pendientes');
-      const dataPendientes = await resPendientes.json();
-      
-      const pendientesConNombres = await Promise.all(
-        dataPendientes.map(async (caso: Denuncia) => {
-          const resDenunciante = await fetch(`${API_URL}/obtenerDenunciante/${caso.id_denuncia}`);
-          if (resDenunciante.ok) {
-            const { nombre } = await resDenunciante.json();
-            return { ...caso, nombre_denunciante: nombre };
-          }
-          return caso;
-        })
-      );
-      setCasosPendientes(pendientesConNombres);
+  try {
+    setLoading(true);
+    
+    // Obtener casos pendientes (ya incluyen nombre del denunciante)
+    const resPendientes = await fetch(`${API_URL}/casosPendientes?idPolicia=${idPolicia}`);
+    if (!resPendientes.ok) throw new Error('Error al obtener pendientes');
+    const dataPendientes = await resPendientes.json();
+    setCasosPendientes(dataPendientes);
 
-      const resAtendidas = await fetch(`${API_URL}/denunciasAtendidas`);
-      if (!resAtendidas.ok) throw new Error('Error al obtener atendidas');
-      const dataAtendidas = await resAtendidas.json();
-      
-      const atendidasConNombres = await Promise.all(
-        dataAtendidas.map(async (denuncia: Denuncia) => {
-          const resDenunciante = await fetch(`${API_URL}/obtenerDenunciante/${denuncia.id_denuncia}`);
-          if (resDenunciante.ok) {
-            const { nombre } = await resDenunciante.json();
-            return { ...denuncia, nombre_denunciante: nombre };
-          }
-          return denuncia;
-        })
-      );
-      setDenunciasAtendidas(atendidasConNombres);
-    } catch (error) {
-      Alert.alert('Error', error instanceof Error ? error.message : 'Error desconocido');
-      console.error(error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
+    // Obtener denuncias atendidas (con el mismo filtro por módulo)
+    const resAtendidas = await fetch(`${API_URL}/denunciasAtendidas?idPolicia=${idPolicia}`);
+    if (!resAtendidas.ok) throw new Error('Error al obtener atendidas');
+    const dataAtendidas = await resAtendidas.json();
+    setDenunciasAtendidas(dataAtendidas);
+
+  } catch (error) {
+    Alert.alert('Error', error instanceof Error ? error.message : 'Error desconocido');
+    console.error(error);
+  } finally {
+    setLoading(false);
+    setRefreshing(false);
+  }
+};
 
   useEffect(() => {
     fetchReportes();
@@ -142,6 +127,7 @@ export default function ReportesScreen() {
                   evidencia: denuncia.evidencia || '',
                   modulo_epi: denuncia.modulo_epi || '',
                   nombre_denunciante: denuncia.nombre_denunciante || ''
+                  ,idPolicia: String(idPolicia)
                 },
               })}
             >
@@ -187,7 +173,8 @@ export default function ReportesScreen() {
                   estado: caso.estado,
                   evidencia: caso.evidencia || '',
                   modulo_epi: caso.modulo_epi || '',
-                  nombre_denunciante: caso.nombre_denunciante || ''
+                  nombre_denunciante: caso.nombre_denunciante || '',
+                  idPolicia: String(idPolicia),
                 },
               })}
             >

@@ -20,6 +20,7 @@ interface Denuncia {
 export default function DescripcionReportes() {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const idPolicia = params.idPolicia ? String(params.idPolicia) : '';
 
   const caso: Denuncia = {
     id_denuncia: Number(params.id_denuncia),
@@ -34,7 +35,7 @@ export default function DescripcionReportes() {
     nombre_denunciante: params.nombre_denunciante ? String(params.nombre_denunciante) : undefined,
   };
 
-  const SERVER_IP = '192.168.1.66';
+  const SERVER_IP = '192.168.1.8';
   const API_URL = `http://${SERVER_IP}:3000`;
 
   const handleAtenderCaso = async () => {
@@ -61,7 +62,8 @@ export default function DescripcionReportes() {
           estado: caso.estado,
           evidencia: caso.evidencia || '',
           modulo_epi: caso.modulo_epi || '',
-          nombre_denunciante: caso.nombre_denunciante || ''
+          nombre_denunciante: caso.nombre_denunciante || '',
+           idPolicia: idPolicia 
         },
       });
     } catch (error) {
@@ -83,7 +85,8 @@ export default function DescripcionReportes() {
         estado: caso.estado,
         evidencia: caso.evidencia || '',
         modulo_epi: caso.modulo_epi || '',
-        nombre_denunciante: caso.nombre_denunciante || ''
+        nombre_denunciante: caso.nombre_denunciante || '',
+         idPolicia: idPolicia 
       },
     });
   };

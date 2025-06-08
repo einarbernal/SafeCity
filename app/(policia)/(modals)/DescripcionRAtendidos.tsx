@@ -2,8 +2,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { FontAwesome } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
-import { SafeAreaView } from 'react-native';
+import { Image, KeyboardAvoidingView, Platform, SafeAreaView, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 
 interface Reporte {
   id_denuncia: number;
@@ -21,6 +20,7 @@ interface Reporte {
 export default function VisualizarReporte() {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const idPolicia = params.idPolicia ? String(params.idPolicia) : '';
 
   const caso: Reporte = {
     id_denuncia: Number(params.id_denuncia),
@@ -48,7 +48,8 @@ export default function VisualizarReporte() {
             estado: caso.estado,
             evidencia: caso.evidencia || '', // Envía evidencia
             modulo_epi: caso.modulo_epi || '', // Envía modulo_epi
-            nombre_denunciante: caso.nombre_denunciante || ''
+            nombre_denunciante: caso.nombre_denunciante || '',
+            idPolicia: idPolicia 
           },
         })
   };
