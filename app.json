@@ -17,7 +17,16 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.testing21.AppPoli"
+      "package": "com.testing21.AppPoli",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyBN5dlfUOQlp7klYmzYQg71pv_ei_vZDeo"
+        }
+      },
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "bundler": "metro",
