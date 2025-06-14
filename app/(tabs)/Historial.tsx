@@ -390,6 +390,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "bold",
     marginBottom: 4,
+   color: "#757575",
   },
   tipo: {
     fontSize: 17,

@@ -465,24 +465,11 @@ const DenunciaScreen = () => {
 
         <View style={styles.seccion}>
           {renderPicker()}
-
+          
           <Text style={styles.seccionTitulo}>Hora del incidente *</Text>
-          <TouchableOpacity
-            style={styles.timePickerButton}
-            onPress={() => setShowTimePicker(true)}
-          >
+          <View style={styles.timePickerButton}>
             <Text style={styles.textoTiempo}>{formatTime(horaIncidente)}</Text>
-            <FontAwesome name="chevron-down" size={16} color="#666" />
-          </TouchableOpacity>
-          {showTimePicker && (
-            <DateTimePicker
-              value={horaIncidente}
-              mode="time"
-              is24Hour={true}
-              display="default"
-              onChange={handleTimeChange}
-            />
-          )}
+          </View>
 
           <Text style={styles.seccionTitulo}>Calle o Avenida *</Text>
           <TextInput

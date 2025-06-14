@@ -37,3 +37,5 @@ yarn-error.*
 *.tsbuildinfo
 
 app-example
+
+safecity-47ffb-firebase-adminsdk-fbsvc-5bbe98f2a6.json
