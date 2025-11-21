@@ -29,8 +29,9 @@ const RegistroCiudadano = () => {
     setModalSuccessVisible(true);
   };
 
-  const SERVER_IP = '192.168.26.7';
-  const API_URL = `http://${SERVER_IP}:3000/registro`;
+  // URL del backend desplegado en Heroku
+  const HEROKU_BASE_URL = 'https://safe-city.herokuapp.com';
+  const API_URL = `${HEROKU_BASE_URL}/registro`;
 
   const handleSubmit = async () => {
     // Validaciones
